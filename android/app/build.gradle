@@ -2,6 +2,21 @@ apply plugin: "com.android.application"
 apply plugin: "kotlin-android"
 apply plugin: "kotlin-android-extensions"
 apply plugin: "com.facebook.react"
+apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
+
+cargo {
+    module  = "../../rust/ptokens-sentinel-core/"
+    libname = "ptokens-sentinel-core"
+    targets = ["x86_64"]
+    profile = "release"
+}
+
+tasks.whenTaskAdded { task ->
+    if ((task.name == 'javaPreCompileDebug' || task.name == 'javaPreCompileRelease')) {
+        println "running cargo build..."
+        task.dependsOn 'cargoBuild'
+    }
+}
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -102,6 +117,12 @@ android {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
+    }
+
+    task PreBuild {}
+
+    gradle.buildFinished {
+        println "build finished"
     }
 }
 
