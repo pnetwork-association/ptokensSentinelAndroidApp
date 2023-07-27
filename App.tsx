@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 
 import {Colors} from 'react-native/Libraries/NewAppScreen';
-import TestButton from './components/test-button.tsx';
+import TestButton from './components/test-button.jsx';
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
