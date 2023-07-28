@@ -11,7 +11,7 @@ import com.facebook.react.bridge.WritableNativeArray
 
 
 class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
-  private external fun callCore(input: String): String
+  private external fun callCore(input: ReadableArray): ByteArray
 
   init {
     System.loadLibrary("ptokens_sentinel_core")
@@ -21,10 +21,14 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
 
   @ReactMethod
   fun callRustCore(bytes: ReadableArray, callback: Callback) {
-    Log.d("RustBridge", "called core with bytes: $bytes")
-    val array: WritableArray = WritableNativeArray()
-    val x: String = callCore("some string")
-    array.pushString(x)
-    callback.invoke(array)
+    Log.d("[DEBUG] RustBridge", "`callRustCore` called with with bytes: $bytes")
+
+    val bytes = callCore(bytes)
+
+    val retVal = WritableNativeArray();
+    for (byte in bytes) {
+      retVal.pushInt(byte.toInt())
+    }
+    callback.invoke(retVal)
   }
 }
