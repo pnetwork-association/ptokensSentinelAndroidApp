@@ -7,13 +7,15 @@ apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
 cargo {
     module  = "../../rust/ptokens-sentinel-core"
     libname = "ptokens_sentinel_core"
-    targets = ["arm"]
+    targets = ["arm64"]
     profile = "release"
 }
 
-preBuild {
-    println "running cargo build..."
-    dependsOn "cargoBuild"
+tasks.whenTaskAdded { task ->
+    if ((task.name == 'javaPreCompileDebug' || task.name == 'javaPreCompileRelease')) {
+        println "[INFO] running cargo build..."
+        task.dependsOn 'cargoBuild'
+    }
 }
 
 /**
