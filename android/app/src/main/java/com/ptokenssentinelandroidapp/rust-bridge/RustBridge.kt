@@ -1,4 +1,4 @@
-package com.ptokenssentinelandroidapp;
+package com.ptokenssentinelandroidapp
 
 import android.util.Log
 import com.facebook.react.bridge.Callback
@@ -11,19 +11,20 @@ import com.facebook.react.bridge.WritableNativeArray
 
 
 class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
-  companion object {
-    init {
-      System.loadLibrary("ptokens_sentinel_core")
-    }
+  private external fun callCore(input: String): String
+
+  init {
+    System.loadLibrary("ptokens_sentinel_core")
   }
 
   override fun getName() = "RustBridge"
 
   @ReactMethod
-  fun callCore(bytes: ReadableArray, callback: Callback) {
+  fun callRustCore(bytes: ReadableArray, callback: Callback) {
     Log.d("RustBridge", "called core with bytes: $bytes")
     val array: WritableArray = WritableNativeArray()
-    array.pushString("test")
+    val x: String = callCore("some string")
+    array.pushString(x)
     callback.invoke(array)
   }
 }

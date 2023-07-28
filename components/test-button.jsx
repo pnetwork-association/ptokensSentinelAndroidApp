@@ -2,12 +2,12 @@ import React from 'react';
 import {NativeModules, Button} from 'react-native';
 import {promisifyCallbackFxn} from '../utils.js';
 
-const callCore = _arg =>
-  promisifyCallbackFxn(NativeModules.RustBridge.callCore, [_arg]);
+const callRustCore = _arg =>
+  promisifyCallbackFxn(NativeModules.RustBridge.callRustCore, [_arg]);
 
 const TestButton = () => {
   const onPress = () => {
-    callCore([1, 2, 3, 4]).then(_r => console.log('here', _r));
+    callRustCore([1, 2, 3, 4]).then(_r => console.log('here', _r));
   };
 
   return (
