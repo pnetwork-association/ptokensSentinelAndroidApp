@@ -7,7 +7,8 @@ const callRustCore = _arg =>
 
 const TestButton = () => {
   const onPress = () => {
-    callRustCore([1, 2, 3, 4]).then(_r => console.log('here', _r));
+    let b64Str = 'AQMDkBw'
+    callRustCore(b64Str).then(_r => console.log('here', _r));
   };
 
   return (
