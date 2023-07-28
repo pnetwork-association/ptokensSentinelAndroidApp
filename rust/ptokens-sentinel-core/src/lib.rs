@@ -10,12 +10,12 @@ pub fn call_core(bytes: &[u8]) -> Vec<u8> {
     bytes.iter().rev().cloned().collect()
 }
 
-#[no_mangle]
 #[allow(non_snake_case)]
-pub extern "C" fn Java_RustBridge_callCore<'local>(
+#[no_mangle]
+pub extern "C" fn Java_com_ptokenssentinelandroidapp_RustBridge_callCore<'local>(
     env: JNIEnv<'local>,
     _class: JClass<'local>,
-    input: JByteArray<'local>,
+    input: JObject<'local>,
 ) -> jstring {
     let len = env.get_array_length(&input).expect("should get length of array");
     let mut buffer = vec![0i8; len as usize];
