@@ -2,4 +2,9 @@
 
 cd "$(dirname -- $0)"
 
-find ../ -name "libptokens_sentinel_core.so" | xargs rm
+readarray -d '' paths < <(find ../ -name "libptokens_sentinel_core.so")
+
+for path in "${paths[@]}"
+do
+   rm $path
+done
