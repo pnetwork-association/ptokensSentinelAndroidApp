@@ -9,11 +9,12 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
-    "typeCheck": "npx tsc"
+    "typeChecker": "npx tsc"
   },
   "dependencies": {
     "react": "18.2.0",
-    "react-native": "0.72.3"
+    "react-native": "0.72.3",
+    "react-native-use-websocket": "^0.2.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
