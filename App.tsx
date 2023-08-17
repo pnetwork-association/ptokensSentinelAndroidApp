@@ -9,6 +9,7 @@ import {
 
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import TestButton from './components/test-button.jsx';
+import WebSockets from './components/web-sockets';
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -24,6 +25,7 @@ function App(): JSX.Element {
         backgroundColor={backgroundStyle.backgroundColor}
       />
       <TestButton />
+      <WebSockets />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         style={backgroundStyle}>
