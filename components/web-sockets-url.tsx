@@ -1,16 +1,22 @@
+import { RootState } from '../state/store'
+import { DEFAULT_WS_URL } from '../lib/constants'
+import { setWebSocketUrl } from '../state/web-sockets-slice'
+import { useAppDispatch, useAppSelector } from '../state/hooks'
 import React, { useMemo, useRef, FC, useEffect, useState } from 'react'
 import {TouchableHighlight, TextInput, SafeAreaView, Text, View, StyleSheet, Pressable, NativeModules, Button} from 'react-native'
 import useWebSocket from 'react-native-use-websocket';
 
 interface WsUrlebSocketProps {}
-const DEFAULT_WS_URL = 'ws://localhost:3000/ws';
 
 const WebSocketsUrl: FC<WsUrlebSocketProps> = () => {
-  const [wsUrl, setWsUrl] = useState(DEFAULT_WS_URL)
+  const [url, setUrl] = useState(DEFAULT_WS_URL)
+
+  const dispatch = useAppDispatch();
+  const { webSocketUrl } = useAppSelector((state: RootState) => state.webSocketUrl);
 
   const onSubmitEdit = (): void => {
-    console.log('web sockets url currently: ', wsUrl)
-    // TODO put in a redux store
+    console.log(`setting web sockets url in state to '${url}`)
+    dispatch(setWebSocketUrl(url));
   }
 
   return (
@@ -22,21 +28,21 @@ const WebSocketsUrl: FC<WsUrlebSocketProps> = () => {
       }}
     >
       <TextInput
-        value={wsUrl}
+        value={url}
         maxLength={100}
-        onChangeText={setWsUrl}
+        onChangeText={setUrl}
         style={{ borderWidth: 1 }}
       />
       <Pressable
-        onPress={onSubmitEdit}
         style={{
           borderWidth: 4,
           borderColor: 'white',
           flexDirection: 'column',
           justifyContent: 'center'
         }}
+        onPress={onSubmitEdit}
       >
-        <Text>Press to update ws url</Text>
+        <Text>Press to update ws url in state</Text>
       </Pressable>
     </View>
   )
