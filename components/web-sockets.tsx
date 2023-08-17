@@ -1,7 +1,14 @@
-import { RootState, useAppSelector } from '../state/store'
-import React, { useMemo, useRef, FC, useEffect, useState } from 'react'
-import {Text, View, StyleSheet, Pressable, NativeModules, Button} from 'react-native'
-import useWebSocket from 'react-native-use-websocket';
+import {RootState, useAppSelector} from '../state/store'
+import React, {useMemo, useRef, FC, useEffect, useState} from 'react'
+import {
+  Text,
+  View,
+  StyleSheet,
+  Pressable,
+  NativeModules,
+  Button,
+} from 'react-native'
+import useWebSocket, {ReadyState} from 'react-native-use-websocket'
 
 interface WebSocketProps {}
 
@@ -11,38 +18,49 @@ interface WebSocketProps {}
 const WebSockets: FC<WebSocketProps> = () => {
   const [info, setInfo] = useState('nothing yet')
 
-  const getRandomNum = (): number =>  {
+  const getRandomNum = (): number => {
     return Math.floor(Math.random() * 10)
   }
 
-  const { webSocketUrl } = useAppSelector((state: RootState) => state.webSocketUrl);
+  const {webSocketUrl} = useAppSelector(
+    (state: RootState) => state.webSocketUrl,
+  )
+
+  const connectionStatus = {
+    [ReadyState.OPEN]: 'Open',
+    [ReadyState.CLOSED]: 'Closed',
+    [ReadyState.CLOSING]: 'Closing',
+    [ReadyState.CONNECTING]: 'Connecting',
+    [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
+  }
 
   const {
-    sendMessage,
-    sendJsonMessage,
-    lastMessage,
-    lastJsonMessage,
     readyState,
-    getWebSocket
-  } = useWebSocket(
-    webSocketUrl,
-    {
+    sendMessage,
+    lastMessage,
+    getWebSocket,
+    sendJsonMessage,
+    lastJsonMessage,
+  } = useWebSocket(webSocketUrl, {
       onOpen: () => console.log('web socket opened'),
       onMessage: e => {
         console.log('message received: ', e.data)
         setInfo(e.data)
       },
       onClose: () => console.log('web socket closed'),
-      shouldReconnect: (closeEvent) => true,
-    },
-  )
+      shouldReconnect: closeEvent => true,
+    })
 
   const sendMsg = (_msg: string) => sendMessage(_msg)
 
   const onPress = (): void => {
     console.log('web sockets test button')
     console.log('ready state: ', readyState)
-    sendMsg(`random num: ${getRandomNum()}`)
+    if (readyState === ReadyState.OPEN) {
+      sendMsg(`random num: ${getRandomNum()}`)
+    } else {
+      console.warn('cannot send message - web socket not open')
+    }
   }
 
   return (
@@ -54,15 +72,18 @@ const WebSockets: FC<WebSocketProps> = () => {
         flexDirection: 'row',
         justifyContent: 'center',
         backgroundColor: '#fc7f50',
-      }}
-    >
+      }}>
       <Pressable onPress={onPress}>
-        <Text style={{ color: 'white', fontWeight: 'bold' }}>
+        <Text style={{color: 'white', fontWeight: 'bold'}}>
           WEBSOCKETS BUTTON
         </Text>
 
-        <Text style={{ color: 'white', fontWeight: 'bold' }}>
-          {`current socket: '${webSocketUrl}'`}
+        <Text style={{color: 'white', fontWeight: 'bold'}}>
+          {`current socket url: '${webSocketUrl}'`}
+        </Text>
+
+        <Text style={{color: 'white', fontWeight: 'bold'}}>
+          {`current info from socket: '${info}'`}
         </Text>
       </Pressable>
     </View>

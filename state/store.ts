@@ -1,14 +1,14 @@
-import { configureStore } from '@reduxjs/toolkit'
+import {configureStore} from '@reduxjs/toolkit'
 import webSocketUrlReducer from './web-sockets-slice'
-import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux'
+import {TypedUseSelectorHook, useDispatch, useSelector} from 'react-redux'
 
 // Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
 type AppDispatch = typeof store.dispatch
 
 export const store = configureStore({
   reducer: {
-    webSocketUrl: webSocketUrlReducer
-  }
+    webSocketUrl: webSocketUrlReducer,
+  },
 })
 
 // NOTE: See docs: https://react-redux.js.org/using-react-redux/usage-with-typescript

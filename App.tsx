@@ -1,5 +1,5 @@
-import { Provider } from 'react-redux'
-import { store } from './state/store'
+import {Provider} from 'react-redux'
+import {store} from './state/store'
 import React from 'react'
 import {
   SafeAreaView,
@@ -19,7 +19,7 @@ function App(): JSX.Element {
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+  }
 
   return (
     <Provider store={store}>
@@ -42,7 +42,7 @@ function App(): JSX.Element {
         </ScrollView>
       </SafeAreaView>
     </Provider>
-  );
+  )
 }
 
-export default App;
+export default App
