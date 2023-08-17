@@ -1,8 +1,7 @@
-import { RootState } from '../state/store'
 import { DEFAULT_WS_URL } from '../lib/constants'
 import { setWebSocketUrl } from '../state/web-sockets-slice'
-import { useAppDispatch, useAppSelector } from '../state/hooks'
 import React, { useMemo, useRef, FC, useEffect, useState } from 'react'
+import { RootState, useAppDispatch, useAppSelector } from '../state/store'
 import {TouchableHighlight, TextInput, SafeAreaView, Text, View, StyleSheet, Pressable, NativeModules, Button} from 'react-native'
 import useWebSocket from 'react-native-use-websocket';
 
@@ -12,6 +11,7 @@ const WebSocketsUrl: FC<WsUrlebSocketProps> = () => {
   const [url, setUrl] = useState(DEFAULT_WS_URL)
 
   const dispatch = useAppDispatch();
+
   const { webSocketUrl } = useAppSelector((state: RootState) => state.webSocketUrl);
 
   const onSubmitEdit = (): void => {

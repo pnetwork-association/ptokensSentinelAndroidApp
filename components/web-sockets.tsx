@@ -1,3 +1,4 @@
+import { RootState, useAppSelector } from '../state/store'
 import React, { useMemo, useRef, FC, useEffect, useState } from 'react'
 import {Text, View, StyleSheet, Pressable, NativeModules, Button} from 'react-native'
 import useWebSocket from 'react-native-use-websocket';
@@ -14,7 +15,7 @@ const WebSockets: FC<WebSocketProps> = () => {
     return Math.floor(Math.random() * 10)
   }
 
-  const socketUrl = 'ws://localhost:3000/ws';
+  const { webSocketUrl } = useAppSelector((state: RootState) => state.webSocketUrl);
 
   const {
     sendMessage,
@@ -24,7 +25,7 @@ const WebSockets: FC<WebSocketProps> = () => {
     readyState,
     getWebSocket
   } = useWebSocket(
-    socketUrl,
+    webSocketUrl,
     {
       onOpen: () => console.log('web socket opened'),
       onMessage: e => {
@@ -40,6 +41,7 @@ const WebSockets: FC<WebSocketProps> = () => {
 
   const onPress = (): void => {
     console.log('web sockets test button')
+    console.log('ready state: ', readyState)
     sendMsg(`random num: ${getRandomNum()}`)
   }
 
@@ -60,7 +62,7 @@ const WebSockets: FC<WebSocketProps> = () => {
         </Text>
 
         <Text style={{ color: 'white', fontWeight: 'bold' }}>
-          {info}
+          {`current socket: '${webSocketUrl}'`}
         </Text>
       </Pressable>
     </View>
