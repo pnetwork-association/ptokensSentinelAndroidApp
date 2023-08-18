@@ -15,7 +15,16 @@ interface WebSocketProps {}
 // NOTE: Docs: https://github.com/Sumit1993/react-native-use-websocket#readme
 
 const WebSockets: FC<WebSocketProps> = () => {
+  const connectionStatus = {
+    [ReadyState.OPEN]: 'Open',
+    [ReadyState.CLOSED]: 'Closed',
+    [ReadyState.CLOSING]: 'Closing',
+    [ReadyState.CONNECTING]: 'Connecting',
+    [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
+  }
+
   const [info, setInfo] = useState('nothing yet')
+  const [webSocketState, setWebSocketState] = useState(connectionStatus[ReadyState.CONNECTING])
 
   const getRandomNum = (): number => {
     return Math.floor(Math.random() * 10)
@@ -25,14 +34,6 @@ const WebSockets: FC<WebSocketProps> = () => {
     (state: RootState) => state.webSocketUrl,
   )
 
-  const connectionStatus = {
-    [ReadyState.OPEN]: 'Open',
-    [ReadyState.CLOSED]: 'Closed',
-    [ReadyState.CLOSING]: 'Closing',
-    [ReadyState.CONNECTING]: 'Connecting',
-    [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
-  }
-
   const {
     readyState,
     sendMessage,
@@ -40,14 +41,21 @@ const WebSockets: FC<WebSocketProps> = () => {
     getWebSocket,
     sendJsonMessage,
     lastJsonMessage,
+    reconnectionCount,
   } = useWebSocket(webSocketUrl, {
-      onOpen: () => console.log('web socket opened'),
-      onMessage: e => {
-        console.log('message received: ', e.data)
-        setInfo(e.data)
+      onOpen: () => {
+        console.log('web socket opened')
+        setWebSocketState(connectionStatus[ReadyState.OPEN])
       },
-      onClose: () => console.log('web socket closed'),
-      shouldReconnect: closeEvent => true,
+      onMessage: ({ data }) => {
+        console.log('message received: ', data)
+        setInfo(data)
+      },
+      onClose: ({ reason }) => {
+        console.log(`web socket closed: ${reason}`)
+        setWebSocketState(connectionStatus[ReadyState.CLOSED])
+      },
+      shouldReconnect: () => true,
       reconnectAttempts: Number.MAX_SAFE_INTEGER,
       reconnectInterval: 10e3,
     })
@@ -81,6 +89,10 @@ const WebSockets: FC<WebSocketProps> = () => {
 
         <Text style={{color: 'white', fontWeight: 'bold'}}>
           {`current socket url: '${webSocketUrl}'`}
+        </Text>
+
+        <Text style={{color: 'white', fontWeight: 'bold'}}>
+          {`current socket state: '${webSocketState}'`}
         </Text>
 
         <Text style={{color: 'white', fontWeight: 'bold'}}>
