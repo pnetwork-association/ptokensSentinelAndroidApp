@@ -1,5 +1,3 @@
-import {RootState, useAppSelector} from '../state/store'
-import React, {useMemo, useRef, FC, useEffect, useState} from 'react'
 import {
   Text,
   View,
@@ -8,12 +6,13 @@ import {
   NativeModules,
   Button,
 } from 'react-native'
+import {RootState, useAppSelector} from '../state/store'
 import useWebSocket, {ReadyState} from 'react-native-use-websocket'
+import React, {useMemo, useRef, FC, useEffect, useState} from 'react'
 
 interface WebSocketProps {}
 
-// NOTE: This is the react-native version (https://www.npmjs.com/package/react-native-use-websocket)
-// but the non react-native version has the docs: https://www.npmjs.com/package/use-websocket
+// NOTE: Docs: https://github.com/Sumit1993/react-native-use-websocket#readme
 
 const WebSockets: FC<WebSocketProps> = () => {
   const [info, setInfo] = useState('nothing yet')
@@ -49,6 +48,8 @@ const WebSockets: FC<WebSocketProps> = () => {
       },
       onClose: () => console.log('web socket closed'),
       shouldReconnect: closeEvent => true,
+      reconnectAttempts: Number.MAX_SAFE_INTEGER,
+      reconnectInterval: 10e3,
     })
 
   const sendMsg = (_msg: string) => sendMessage(_msg)
