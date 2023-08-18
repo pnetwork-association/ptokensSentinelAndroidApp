@@ -1,38 +1,28 @@
-import {
-  Text,
-  View,
-  StyleSheet,
-  Pressable,
-  NativeModules,
-  Button,
-} from 'react-native'
+import {useAppDispatch} from '../state/store'
 import {RootState, useAppSelector} from '../state/store'
+import {setWebSocketState} from '../state/web-sockets-slice'
+import {WEB_SOCKET_CONNECTION_STATUS} from '../lib/constants'
 import useWebSocket, {ReadyState} from 'react-native-use-websocket'
 import React, {useMemo, useRef, FC, useEffect, useState} from 'react'
-
-interface WebSocketProps {}
+import { Text, View, StyleSheet, Pressable, NativeModules, Button } from 'react-native'
 
 // NOTE: Docs: https://github.com/Sumit1993/react-native-use-websocket#readme
 
-const WebSockets: FC<WebSocketProps> = () => {
-  const connectionStatus = {
-    [ReadyState.OPEN]: 'Open',
-    [ReadyState.CLOSED]: 'Closed',
-    [ReadyState.CLOSING]: 'Closing',
-    [ReadyState.CONNECTING]: 'Connecting',
-    [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
-  }
+interface WebSocketProps {}
 
+const WebSockets: FC<WebSocketProps> = () => {
   const [info, setInfo] = useState('nothing yet')
-  const [webSocketState, setWebSocketState] = useState(connectionStatus[ReadyState.CONNECTING])
+
+  const dispatch = useAppDispatch()
 
   const getRandomNum = (): number => {
     return Math.floor(Math.random() * 10)
   }
 
-  const {webSocketUrl} = useAppSelector(
-    (state: RootState) => state.webSocketUrl,
-  )
+  const {
+    url: webSocketUrl,
+    socketState: webSocketState,
+  } = useAppSelector((state: RootState) => state.webSocket)
 
   const {
     readyState,
@@ -41,19 +31,18 @@ const WebSockets: FC<WebSocketProps> = () => {
     getWebSocket,
     sendJsonMessage,
     lastJsonMessage,
-    reconnectionCount,
   } = useWebSocket(webSocketUrl, {
       onOpen: () => {
         console.log('web socket opened')
-        setWebSocketState(connectionStatus[ReadyState.OPEN])
+        dispatch(setWebSocketState(ReadyState.OPEN))
       },
       onMessage: ({ data }) => {
         console.log('message received: ', data)
         setInfo(data)
       },
       onClose: ({ reason }) => {
-        console.log(`web socket closed: ${reason}`)
-        setWebSocketState(connectionStatus[ReadyState.CLOSED])
+        console.log(`web socket closed reason: ${reason}`)
+        dispatch(setWebSocketState(ReadyState.CLOSED))
       },
       shouldReconnect: () => true,
       reconnectAttempts: Number.MAX_SAFE_INTEGER,
@@ -88,7 +77,7 @@ const WebSockets: FC<WebSocketProps> = () => {
         </Text>
 
         <Text style={{color: 'white', fontWeight: 'bold'}}>
-          {`current socket url: '${webSocketUrl}'`}
+          {`current socket webSocketUrl: '${webSocketUrl}'`}
         </Text>
 
         <Text style={{color: 'white', fontWeight: 'bold'}}>
