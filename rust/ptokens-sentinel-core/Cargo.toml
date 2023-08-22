@@ -7,5 +7,8 @@ edition = "2021"
 crate-type = ["dylib"] # NOTE: Smallest type of lib
 
 [dependencies]
-base64 = "0.21.2"
 jni = "0.21.1"
+log = "0.4.20"
+base64 = "0.21.2"
+thiserror = "1.0.47"
+derive_more = "0.99.17"

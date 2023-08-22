@@ -17,6 +17,7 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
 
   @ReactMethod
   fun callRustCore(b64Input: String, callback: Callback) {
+    //var db: DatabaseWiring = DatabaseWiring()
     Log.d("[DEBUG] RustBridge", "`callRustCore` called with with str: $b64Input")
     callback.invoke(callCore(b64Input))
   }

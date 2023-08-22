@@ -37,6 +37,17 @@ def enableProguardInReleaseBuilds = false
 def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
+    /*
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+    */
+
     ndkVersion rootProject.ext.ndkVersion
 
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -80,6 +91,12 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    implementation 'com.google.android.gms:play-services-safetynet:15.0.1'
+
+    implementation "androidx.sqlite:sqlite:2.2.0"
+    implementation "androidx.sqlite:sqlite-framework:2.2.0"
+    implementation "commons-codec:commons-codec:1.15"
+
 
     debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}")
     debugImplementation("com.facebook.flipper:flipper-network-plugin:${FLIPPER_VERSION}") {
