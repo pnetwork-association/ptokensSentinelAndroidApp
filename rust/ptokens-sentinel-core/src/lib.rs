@@ -4,6 +4,7 @@
 extern crate log;
 
 mod base64;
+mod traits;
 mod database;
 mod error;
 mod type_aliases;

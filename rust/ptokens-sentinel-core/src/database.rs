@@ -1,7 +1,13 @@
-use crate::CoreError;
+use crate::{
+    type_aliases::{ByteArray, Bytes, DataSensitivity},
+    CoreError,
+    traits::DatabaseT,
+};
 use derive_more::Constructor;
-use jni::objects::{GlobalRef, JObject, JValue};
-use jni::{objects::JClass, JNIEnv};
+use jni::{
+    objects::{GlobalRef, JClass, JObject, JValue},
+    JNIEnv,
+};
 
 #[derive(Constructor)]
 pub struct Database<'a> {
@@ -18,48 +24,6 @@ impl Database<'_> {
 }
 
 /*
-impl Database<'_> {
-    pub fn open<'a>(env: &'a mut JNIEnv<'a>, callback: JObject) -> Result<Database<'a>, CoreError> {
-        // NOTE: We make a global ref of the passed in object to ensure it's GCd by java once we
-        // drop it in rust.
-        // FIXME Rm Here it seems we're turning this ref back into an obect once the DB has been
-        // started. I don't think we need this logic since that object appears to be the
-        // `main_activity_instance`, which is the whatever method (in rust or java???) that we're _actually_ calling
-        //
-        // Real question here is can we pass in the db object so that we only open it once?
-
-        info!("opening database");
-        match env.new_global_ref(callback) {
-            Ok(global_ref) => {
-                let db = Database::new(env, global_ref);
-                info!("db opened");
-                Ok(db)
-            }
-            Err(e) => {
-                let err_msg = format!(
-                    "failed to create the global reference for the java callback object: {e}"
-                );
-                error!("{err_msg}");
-                env.throw_new("java/lang/Exception", format!("{}", err_msg))?;
-                Err(e.into())
-            }
-        }
-    }
-}
-
-pub fn get_database<'a>(db_class: JClass<'a>) -> Result<Database<'a>, CoreError> {
-    Database::open()
-}
-*/
-
-/*
-use ptokens_core::{
-    Bytes,
-    AppError,
-    DatabaseInterface,
-    Result as PTokensResult,
-};
-
 impl DatabaseInterface for Database<'_> {
     fn end_transaction(&self) -> PTokensResult<()> {
         let main_activity_instance = self.callback.as_obj();
