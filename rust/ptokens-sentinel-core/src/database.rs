@@ -1,14 +1,23 @@
 use crate::CoreError;
 use derive_more::Constructor;
 use jni::objects::{GlobalRef, JObject, JValue};
-use jni::JNIEnv;
+use jni::{objects::JClass, JNIEnv};
 
 #[derive(Constructor)]
 pub struct Database<'a> {
-    env: &'a JNIEnv<'a>,
-    callback: GlobalRef,
+    db_java_class: JClass<'a>,
+    //env: &'a JNIEnv<'a>,
+    //callback: GlobalRef,
 }
 
+impl Database<'_> {
+    pub fn call_callback(&self, env: &mut JNIEnv) -> Result<(), CoreError> {
+        env.call_static_method(&self.db_java_class, "callback", "()V", &[])?;
+        Ok(())
+    }
+}
+
+/*
 impl Database<'_> {
     pub fn open<'a>(env: &'a mut JNIEnv<'a>, callback: JObject) -> Result<Database<'a>, CoreError> {
         // NOTE: We make a global ref of the passed in object to ensure it's GCd by java once we
@@ -31,17 +40,17 @@ impl Database<'_> {
                     "failed to create the global reference for the java callback object: {e}"
                 );
                 error!("{err_msg}");
-                env.throw_new("java/lang/Exception", format!("{}", err_msg))
-                    .unwrap(); // FIXME
+                env.throw_new("java/lang/Exception", format!("{}", err_msg))?;
                 Err(e.into())
             }
         }
     }
 }
 
-pub fn get_database<'a>(env: &'a mut JNIEnv<'a>, callback: JObject) -> Database<'a> {
-    Database::open(env, callback).unwrap()
+pub fn get_database<'a>(db_class: JClass<'a>) -> Result<Database<'a>, CoreError> {
+    Database::open()
 }
+*/
 
 /*
 use ptokens_core::{
