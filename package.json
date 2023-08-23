@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "buildRustLibs": "./android/scripts/build-rust-libs.sh",
     "cleanRustLibs": "./android/scripts/clean-rust-libs.sh",
     "android": "react-native run-android",
     "ios": "react-native run-ios",
