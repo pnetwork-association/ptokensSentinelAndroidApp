@@ -37,10 +37,10 @@ fn call_core_inner<'a>(env: &'a mut JNIEnv, input: &'a JString) -> Result<JStrin
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub extern "C" fn Java_com_ptokenssentinelandroidapp_RustBridge_callCore<'a>(
-    mut env: JNIEnv<'a>,
-    _class: JClass<'a>,
-    input: JString<'a>,
+pub extern "C" fn Java_com_ptokenssentinelandroidapp_RustBridge_callCore(
+    mut env: JNIEnv,
+    _class: JClass,
+    input: JString,
 ) -> jstring {
     call_core_inner(&mut env, &input)
         .map_err(|e| e.to_string()) // FIXME encode the error type to b64 too
