@@ -1,24 +1,39 @@
 use crate::{
-    type_aliases::{ByteArray, Bytes, DataSensitivity},
-    CoreError,
     traits::DatabaseT,
+    type_aliases::{ByteArray, Bytes, DataSensitivity, JavaPointer},
+    CoreError,
 };
 use derive_more::Constructor;
 use jni::{
-    objects::{GlobalRef, JClass, JObject, JValue},
+    objects::{GlobalRef, JClass, JObject, JString, JValue},
     JNIEnv,
 };
 
+const DB_CLASS_PATH: &str = "com/ptokenssentinelandroidapp/database/DatabaseWiring";
+
 #[derive(Constructor)]
 pub struct Database<'a> {
-    db_java_class: JClass<'a>,
-    //env: &'a JNIEnv<'a>,
+    env: JNIEnv<'a>,
+    //db_java_class: JClass<'a>,
     //callback: GlobalRef,
 }
 
 impl Database<'_> {
-    pub fn call_callback(&self, env: &mut JNIEnv) -> Result<(), CoreError> {
-        env.call_static_method(&self.db_java_class, "callback", "()V", &[])?;
+    pub fn parse_input(&mut self, input: &JString) -> Result<String, CoreError> {
+        Ok(self.env.get_string(input)?.into())
+    }
+
+    fn to_jstring(&mut self, s: &str) -> Result<JString<'_>, CoreError> {
+        Ok(self.env.new_string(s)?)
+    }
+
+    pub fn to_return_value_pointer(&mut self, s: &str) -> Result<*mut JavaPointer, CoreError> {
+        Ok(self.to_jstring(s)?.into_raw())
+    }
+
+    pub fn call_callback(&mut self) -> Result<(), CoreError> {
+        let class = self.env.find_class(DB_CLASS_PATH)?;
+        self.env.call_static_method(class, "callback", "()V", &[])?;
         Ok(())
     }
 }

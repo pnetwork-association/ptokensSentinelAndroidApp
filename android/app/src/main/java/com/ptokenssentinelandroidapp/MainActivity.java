@@ -1,9 +1,12 @@
 package com.ptokenssentinelandroidapp;
 
+import static java.security.AccessController.getContext;
+
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
 import com.facebook.react.defaults.DefaultReactActivityDelegate;
+import android.content.pm.ApplicationInfo;
 
 public class MainActivity extends ReactActivity {
 

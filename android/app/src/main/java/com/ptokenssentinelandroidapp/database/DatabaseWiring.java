@@ -61,7 +61,7 @@ public class DatabaseWiring implements DatabaseInterface {
         this.cache = new ConcurrentHashMap<>();
         this.verifySignedStateHashEnabled = verifyStateHash;
 
-        SQLiteHelper.loadExtension(db);
+        //SQLiteHelper.loadExtension(db);
     }
 
     public DatabaseWiring(

@@ -57,10 +57,12 @@ public class SQLiteHelper extends SQLiteOpenHelper {
         db.replace(DatabaseContract.DatabaseEntry.TABLE_NAME, null, contentValues);
     }
 
+    /*
     static void loadExtension(SQLiteDatabase db) {
         db.execSQL(DatabaseContract.DatabaseEntry.SQL_LOAD_EXTENSION);
         Log.d(TAG, "extension loaded");
     }
+    */
 
     static byte[] getBytesFromKey(SQLiteDatabase db, String key) {
         String[] columns = { DatabaseContract.DatabaseEntry.FIELD_VALUE };
