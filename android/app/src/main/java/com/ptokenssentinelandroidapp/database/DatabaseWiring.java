@@ -39,8 +39,9 @@ public class DatabaseWiring implements DatabaseInterface {
     public static final String TAG = DatabaseWiring.class.getName();
     private static final String NAME_SIGNED_STATE_HASH = "state-hash.sig";
 
-    private boolean START_TX_IN_PROGRESS = false;
-    private boolean END_TX_IN_PROGRESS = false;
+    private boolean START_DB_TX_IN_PROGRESS = false;
+    private boolean END_DB_TX_IN_PROGRESS = false;
+    private boolean DB_TX_IN_PROGRESS = false;
 
     private Context context;
     private SQLiteDatabase db;
@@ -139,11 +140,16 @@ public class DatabaseWiring implements DatabaseInterface {
 
     @Override
     public void startTransaction() throws DatabaseException {
-        Log.i(TAG, "start transaction in progress!");
-        if (START_TX_IN_PROGRESS) {
+        Log.i(TAG, "starting db tx...");
+        if (START_DB_TX_IN_PROGRESS) {
+            Log.i(TAG, "cannot start db tx, one is already starting");
+            return;
+        } else if (DB_TX_IN_PROGRESS) {
+            Log.i(TAG, "cannot start db tx, one is already in progress");
             return;
         }
-        START_TX_IN_PROGRESS = true;
+
+        START_DB_TX_IN_PROGRESS = true;
 
         /*
         if (verifySignedStateHashEnabled) {
@@ -151,7 +157,7 @@ public class DatabaseWiring implements DatabaseInterface {
                 verifySignedStateHash();
             } catch (StrongboxException e) {
                 Log.e(TAG, "signed state hash verification failed!", e);
-                throw new DatabaseException("Start transaction failed");
+                throw new DatabaseException("Start tx failed");
             }
         } else {
         */
@@ -159,22 +165,28 @@ public class DatabaseWiring implements DatabaseInterface {
         //}
 
         db.beginTransaction();
+        START_DB_TX_IN_PROGRESS = false;
+        Log.i(TAG, "db tx started");
+        DB_TX_IN_PROGRESS = true;
     }
 
     @Override
     public void endTransaction() throws DatabaseException {
-        Log.i(TAG, "endTransaction in progress... ");
-
+        Log.i(TAG, "ending db tx...");
         try {
-            if (END_TX_IN_PROGRESS) {
+            if (END_DB_TX_IN_PROGRESS) {
+                Log.i(TAG, "end db tx already in progress");
                 return;
-            } if (!START_TX_IN_PROGRESS) {
-                throw new DatabaseException("invalid order, call startTransaction first!");
+            } if (!DB_TX_IN_PROGRESS) {
+                Log.i(TAG, "no db tx in progress to end");
+                return;
+            } if (START_DB_TX_IN_PROGRESS) {
+                throw new DatabaseException("cannot end db tx, one is currently starting");
             } else {
-                START_TX_IN_PROGRESS = false;
+                START_DB_TX_IN_PROGRESS = false;
             }
 
-            END_TX_IN_PROGRESS = true;
+            END_DB_TX_IN_PROGRESS = true;
 
             Log.v(TAG, "writing keys: ");
 
@@ -189,6 +201,9 @@ public class DatabaseWiring implements DatabaseInterface {
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
+            DB_TX_IN_PROGRESS = false;
+            END_DB_TX_IN_PROGRESS = false;
+            Log.v(TAG, "keys written, db tx ended successfully");
         }
         /*
         try {
@@ -200,7 +215,7 @@ public class DatabaseWiring implements DatabaseInterface {
         } catch (DatabaseException e) {
             Log.e(TAG, "failed to write the state hash", e);
         } finally {
-            START_TX_IN_PROGRESS = false;
+            START_DB_TX_IN_PROGRESS = false;
         }
         */
     }
