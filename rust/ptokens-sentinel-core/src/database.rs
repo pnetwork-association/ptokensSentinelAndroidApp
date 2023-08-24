@@ -9,198 +9,109 @@ use jni::{
     JNIEnv,
 };
 
-const DB_CLASS_PATH: &str = "com/ptokenssentinelandroidapp/database/DatabaseWiring";
-
 #[derive(Constructor)]
 pub struct Database<'a> {
-    env: JNIEnv<'a>,
-    //db_java_class: JClass<'a>,
-    //callback: GlobalRef,
+    env: &'a JNIEnv<'a>,
+    db_java_class: JObject<'a>,
 }
 
 impl Database<'_> {
-    pub fn parse_input(&mut self, input: &JString) -> Result<String, CoreError> {
+    pub fn parse_input(&self, input: JString) -> Result<String, CoreError> {
         Ok(self.env.get_string(input)?.into())
     }
 
-    fn to_jstring(&mut self, s: &str) -> Result<JString<'_>, CoreError> {
+    fn to_jstring(&self, s: &str) -> Result<JString<'_>, CoreError> {
         Ok(self.env.new_string(s)?)
     }
 
-    pub fn to_return_value_pointer(&mut self, s: &str) -> Result<*mut JavaPointer, CoreError> {
-        Ok(self.to_jstring(s)?.into_raw())
+    pub fn to_return_value_pointer(&self, s: &str) -> Result<*mut JavaPointer, CoreError> {
+        Ok(self.to_jstring(s)?.into_inner())
     }
 
-    pub fn call_callback(&mut self) -> Result<(), CoreError> {
-        let class = self.env.find_class(DB_CLASS_PATH)?;
-        self.env.call_static_method(class, "callback", "()V", &[])?;
-        Ok(())
-    }
-}
-
-/*
-impl DatabaseInterface for Database<'_> {
-    fn end_transaction(&self) -> PTokensResult<()> {
-        let main_activity_instance = self.callback.as_obj();
-
-        match self.env.call_method(
-            main_activity_instance,
-            "endTransaction",
-            "()V",
-            &[]
-        ) {
+    pub fn call_callback(&self) -> Result<(), CoreError> {
+        match self
+            .env
+            .call_static_method(self.db_java_class, "callback", "()V", &[])
+        {
             Ok(_) => Ok(()),
             Err(e) => {
-                self.env.exception_describe().unwrap();
-                self.env.exception_clear().unwrap();
-                Err(AppError::Custom(e.to_string()))
+                self.env.exception_describe()?;
+                self.env.exception_clear()?;
+                Err(e.into())
             }
         }
     }
 
-    fn start_transaction(&self) -> PTokensResult<()> {
-        let main_activity_instance = self.callback.as_obj();
-        match self.env.call_method(
-            main_activity_instance,
-            "startTransaction",
-            "()V",
-            &[]
-        ) {
+    fn call_java_db_fxn(
+        &self,
+        method: &str,
+        return_sig: &str,
+        args: &[JValue],
+    ) -> Result<(), CoreError> {
+        match self
+            .env
+            .call_method(self.db_java_class, method, return_sig, args)
+        {
             Ok(_) => Ok(()),
             Err(e) => {
-                self.env.exception_describe().unwrap();
-                self.env.exception_clear().unwrap();
-                Err(AppError::Custom(e.to_string()))
+                self.env.exception_describe()?;
+                self.env.exception_clear()?;
+                Err(e.into())
             }
         }
     }
 
-    fn delete(&self, key: Bytes) -> PTokensResult<()> {
-        let main_activity_instance = self.callback.as_obj();
-        let key_byte_array = match self.env.byte_array_from_slice(&key) {
-            Ok(v) => Some(v),
-            Err(e) => {
-                error!("✘ {}", e);
-                None
-            }
-        };
+    fn to_java_byte_array(&self, bs: &ByteArray) -> Result<JValue, CoreError> {
+        Ok(JValue::from(JObject::from(
+            self.env.byte_array_from_slice(&bs)?,
+        )))
+    }
 
-        if key_byte_array.is_none() {
-            return Err(AppError::Custom("Failed to get the key byte array from JAVA in delete()".to_string()))
-        }
+    pub fn start_transaction(&self) -> Result<(), CoreError> {
+        self.call_java_db_fxn("startTransaction", "()V", &[])
+    }
 
-        match self.env.call_method(
-            main_activity_instance,
-            "delete",
-            "([B)V",
-            &[JValue::from(JObject::from(key_byte_array.unwrap()))]
-        ) {
+    pub fn end_transaction(&self) -> Result<(), CoreError> {
+        self.call_java_db_fxn("endTransaction", "()V", &[])
+    }
+
+    pub fn delete(&self, k: &ByteArray) -> Result<(), CoreError> {
+        self.call_java_db_fxn("delete", "([B)V", &[self.to_java_byte_array(k)?])
+    }
+
+    pub fn get(&self, k: &ByteArray, sensitivity: DataSensitivity) -> Result<Bytes, CoreError> {
+        let args = [
+            self.to_java_byte_array(k)?,
+            JValue::from(sensitivity.unwrap_or_default()),
+        ];
+        Ok(self
+            .env
+            .call_method(self.db_java_class, "get", "([BB)[B", &args)
+            .and_then(|ret| ret.l())
+            .and_then(|j_value| self.env.convert_byte_array(j_value.into_inner()))?)
+    }
+
+    pub fn put(
+        &self,
+        k: &ByteArray,
+        v: &ByteArray,
+        sensitivity: Option<u8>,
+    ) -> Result<(), CoreError> {
+        let args = [
+            self.to_java_byte_array(k)?,
+            self.to_java_byte_array(v)?,
+            JValue::from(sensitivity.unwrap_or_default()),
+        ];
+        match self
+            .env
+            .call_method(self.db_java_class, "put", "([B[BB)V", &args)
+        {
             Ok(_) => Ok(()),
             Err(e) => {
-                self.env.exception_describe().unwrap();
-                self.env.exception_clear().unwrap();
-                Err(AppError::Custom(e.to_string()))
-            }
-        }
-    }
-
-    fn get(&self, key: Bytes, sensitivity: Option<u8>) -> PTokensResult<Bytes> {
-        let jmain_activity = self.callback.as_obj();
-        let jkey = match self.env
-            .byte_array_from_slice(&key) {
-            Ok(v) => Some(v),
-            Err(e) => {
-                error!("✘ {}", e);
-                None
-            }
-        };
-
-        if jkey.is_none() {
-            return Err(AppError::Custom("Failed to get the key byte array from JAVA in get()".to_string()))
-        }
-
-        match self.env.call_method(
-            jmain_activity,
-            "get",
-            "([BB)[B",
-            &[
-                JValue::from(JObject::from(jkey.unwrap())),
-                JValue::from(sensitivity.unwrap_or(0))
-            ]
-        ) {
-            Ok(v) => {
-                let maybe_java_value = match v.l() {
-                    Ok(v) => Some(v),
-                    Err(e) => {
-                        error!("✘ {}", e);
-                        None
-                    }
-                };
-
-                let value = match self.env
-                    .convert_byte_array(maybe_java_value.unwrap().into_inner()) {
-                    Ok(v) => Some(v),
-                    Err(e) => {
-                        error!("✘ {}", e);
-                        None
-                    }
-                };
-
-                if value.is_none() {
-                    return Err(AppError::Custom("Failed to convert to byte array in get()".to_string()))
-                }
-
-                Ok(value.unwrap())
-            },
-            Err(e) => {
-                self.env.exception_describe().unwrap();
-                self.env.exception_clear().unwrap();
-                Err(AppError::Custom(e.to_string()))
-            }
-        }
-    }
-
-    fn put(&self, key: Bytes, value: Bytes, sensitivity: Option<u8>) -> PTokensResult<()> {
-        let main_activity_instance = self.callback.as_obj();
-        let key_byte_array = match self.env
-            .byte_array_from_slice(&key) {
-            Ok(v) => Some(v),
-            Err(e) => {
-                error!("✘ {}", e);
-                None
-            }
-        };
-
-        let value_byte_array = match self.env
-            .byte_array_from_slice(&value) {
-            Ok(v) => Some(v),
-            Err(e) => {
-                error!("✘ {}", e);
-                None
-            }
-        };
-
-        if value_byte_array.is_none() || key_byte_array.is_none() {
-            return Err(AppError::Custom("Invalid arguments for put()".to_string()))
-        }
-
-        match self.env.call_method(
-            main_activity_instance,
-            "put",
-            "([B[BB)V",
-            &[
-                JValue::from(JObject::from(key_byte_array.unwrap())),
-                JValue::from(JObject::from(value_byte_array.unwrap())),
-                JValue::from(sensitivity.unwrap_or(0))
-            ]
-        ) {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                self.env.exception_describe().unwrap();
-                self.env.exception_clear().unwrap();
-                Err(AppError::Custom(e.to_string()))
+                self.env.exception_describe()?;
+                self.env.exception_clear()?;
+                Err(e.into())
             }
         }
     }
 }
-*/

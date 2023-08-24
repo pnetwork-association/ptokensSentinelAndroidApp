@@ -1,6 +1,6 @@
 use crate::type_aliases::{ByteArray, Bytes, DataSensitivity};
 
-pub trait DatabaseT<T: AsRef<ByteArray> + std::convert::AsRef<[u8]>> {
+pub trait DatabaseT {
     type Error;
 
     fn end_transaction(&self) -> Result<(), Self::Error>;
