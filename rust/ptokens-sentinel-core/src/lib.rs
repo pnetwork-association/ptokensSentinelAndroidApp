@@ -20,26 +20,37 @@ pub use error::CoreError;
 
 use jni::{
     objects::{JClass, JObject, JString},
-    sys::{_jobject, jstring},
+    sys::{jstring},
     JNIEnv,
 };
 
-fn call_core_inner<'a>(
-    mut env: JNIEnv<'a>,
+fn call_core_inner(
+    env: JNIEnv<'_>,
     db_java_class: JObject,
     input: JString,
 ) -> Result<*mut JavaPointer, CoreError> {
     let db = Database::new(&env, db_java_class);
 
     db.start_transaction()?;
+
+    let k = vec![6u8, 6u8, 7u8];
+    //let v = vec![1u8, 3u8, 3u8, 7u8];
+    //db.put(&k, &v, None)?;
+    let x = match db.get(&k, None) {
+        Ok(r) => r,
+        Err(e) => {
+            println!("{e}");
+            vec![9u8, 9u8, 9u8]
+        }
+    };
+
     let input = db.parse_input(input)?;
     let bs = from_b64(&input)?;
     let reversed = bs.iter().rev().cloned().collect::<Bytes>();
-    let reversed_b64 = to_b64(&reversed);
+    let _reversed_b64 = to_b64(&reversed);
     db.call_callback()?;
     db.end_transaction()?;
-    db.to_return_value_pointer(&reversed_b64)
-    //Ok(env.new_string("poop")?.into_inner())
+    db.to_return_value_pointer(&to_b64(&x))
 }
 
 #[allow(non_snake_case)]
