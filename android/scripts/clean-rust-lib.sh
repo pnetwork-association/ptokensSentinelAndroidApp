@@ -2,7 +2,7 @@
 
 cd "$(dirname -- $0)"
 
-readarray -d '' paths < <(find ../ -name "libptokens_sentinel_core.so")
+readarray -d '' paths < <(find ../ -name "libsentinel-strongbox.so")
 
 for path in "${paths[@]}"
 do
