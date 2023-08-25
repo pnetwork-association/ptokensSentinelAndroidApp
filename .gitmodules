@@ -1,0 +1,3 @@
+[submodule "rust/ptokens-core-private"]
+	path = rust/ptokens-core-private
+	url = /home/user/ptokens-core-private
