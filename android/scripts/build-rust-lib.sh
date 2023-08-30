@@ -16,6 +16,6 @@ cd "../../rust/ptokens-core-private/v3_bridges/evm/sentinel-strongbox/"
 
 TARGET_CC="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang" \
 TARGET_AR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" \
-cargo build --target=aarch64-linux-android
+cargo build --target=aarch64-linux-android #--release
 
 cd -
