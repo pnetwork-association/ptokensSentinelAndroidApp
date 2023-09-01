@@ -9,10 +9,11 @@ import {
   View,
 } from 'react-native'
 
-import {Colors} from 'react-native/Libraries/NewAppScreen'
-import TestButton from './components/test-button.jsx'
+import DropDbButton from './components/drop-db'
 import WebSockets from './components/web-sockets'
+import TestButton from './components/test-button.jsx'
 import WebSocketsUrl from './components/web-sockets-url'
+import {Colors} from 'react-native/Libraries/NewAppScreen'
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark'
@@ -31,6 +32,7 @@ function App(): JSX.Element {
         <TestButton />
         <WebSockets />
         <WebSocketsUrl />
+        <DropDbButton />
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           style={backgroundStyle}>

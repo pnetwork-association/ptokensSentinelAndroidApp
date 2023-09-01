@@ -120,7 +120,11 @@ public class SQLiteHelper extends SQLiteOpenHelper {
         String selection = DatabaseContract.DatabaseEntry.FIELD_KEY + " = ?";
         String[] selectionArgs = { key };
 
-        int n = db.delete(DatabaseContract.DatabaseEntry.TABLE_NAME,selection, selectionArgs);
+        int n = db.delete(DatabaseContract.DatabaseEntry.TABLE_NAME, selection, selectionArgs);
         Log.d(TAG,  n + " records removed");
+    }
+
+    static void drop(Context context) {
+        context.deleteDatabase(DATABASE_NAME);
     }
 }

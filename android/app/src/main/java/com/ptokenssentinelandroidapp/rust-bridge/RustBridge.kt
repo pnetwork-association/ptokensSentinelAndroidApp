@@ -22,7 +22,7 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
   )
 
   init {
-    System.loadLibrary("ptokens_sentinel_core")
+    System.loadLibrary("sentinel_strongbox")
   }
 
   override fun getName() = "RustBridge"
@@ -49,5 +49,11 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
     //var db: DatabaseWiring = DatabaseWiring(context, this.getSqlDatabase(context), false)
     Log.d("[DEBUG]" + this.TAG, "`callRustCore` called with with str: $b64Input")
     callback.invoke(callCore(this.db, b64Input))
+  }
+
+  @ReactMethod
+  fun dropDb(callback: Callback) {
+    db.drop()
+    Log.d("[WARN]" + this.TAG, "database dropped!")
   }
 }

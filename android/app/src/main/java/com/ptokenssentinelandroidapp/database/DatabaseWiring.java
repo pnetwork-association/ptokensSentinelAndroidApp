@@ -339,4 +339,9 @@ public class DatabaseWiring implements DatabaseInterface {
             throw new NullPointerException("Value not found in the database");
         return value;
     }
+
+    public void drop() {
+        // FIXME gate this somehow (debug signature?)
+        SQLiteHelper.drop(context);
+    }
 }
