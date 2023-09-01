@@ -1,1 +1,6 @@
-{}
+{
+  "ignore_dirs": [
+    "./rust/ptokens-core-private/target/aarch64-linux-android/debug/deps/",
+    "./rust/ptokens-core-private/target/aarch64-linux-android/release/deps"
+  ]
+}
