@@ -3,14 +3,16 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "buildRustLib": "./android/scripts/build-rust-lib.sh",
-    "cleanRustLib": "./android/scripts/clean-rust-lib.sh",
-    "android": "react-native run-android",
-    "ios": "react-native run-ios",
-    "lint": "eslint .",
-    "start": "react-native start",
     "test": "jest",
-    "typeChecker": "npx tsc"
+    "lint": "eslint .",
+    "typeChecker": "npx tsc",
+    "clean": "./scripts/clean.sh",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "android": "react-native run-android",
+    "buildRustLib": "./scripts/build-rust-lib.sh",
+    "cleanRustLib": "./scripts/clean-rust-lib.sh",
+    "cleanAndroidBuildDirs": "./scripts/clean-android-build-dirs.sh"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.9.5",
