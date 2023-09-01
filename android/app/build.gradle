@@ -4,57 +4,13 @@ apply plugin: "kotlin-android-extensions"
 apply plugin: "com.facebook.react"
 apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
 
-cargo {
-    module  = "../../rust/ptokens-core-private/v3_bridges/evm/sentinel-strongbox"
-    targetDirectory = "../../rust/ptokens-core-private/target"
-    libname = "sentinel_strongbox"
-    targets = ["arm64"]
-    profile = "debug" //# FIXME
-    exec { spec, toolchain ->
-        if (toolchain.target != "aarch64-linux-android") {
-            spec.environment("TARGET_AR", "$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar")
-            spec.environment("TARGET_CC", "$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang")
-        }
-    }
-}
-
-tasks.whenTaskAdded { task ->
-    if ((task.name == 'javaPreCompileDebug' || task.name == 'javaPreCompileRelease')) {
-        println "[INFO] running cargo build..."
-        task.dependsOn 'cargoBuild'
-    }
-}
-
-/**
- * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
- */
 def enableProguardInReleaseBuilds = false
-
-/**
- * The preferred build flavor of JavaScriptCore (JSC)
- *
- * For example, to use the international variant, you can use:
- * `def jscFlavor = 'org.webkit:android-jsc-intl:+'`
- *
- * The international variant includes ICU i18n library and necessary data
- * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that
- * give correct results when using with locales other than en-US. Note that
- * this variant is about 6MiB larger per architecture than default.
- */
 def jscFlavor = 'org.webkit:android-jsc:+'
+// NOTE: Set the `CARGO_BUILD_PROFILE` env var to anything to get a debug build
+def cargoBuildProfileEvnVar = System.getenv("CARGO_BUILD_PROFILE")
+def cargoProfile = cargoBuildProfileEvnVar != null ? "debug" : "release"
 
 android {
-    /*
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = '11'
-    }
-    */
-
     ndkVersion rootProject.ext.ndkVersion
 
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -91,8 +47,33 @@ android {
     task PreBuild {}
 }
 
+preBuild {
+    exec {
+        // TODO/FIXME check for env vars via script, and if we need the TARGET_CC & _AR ones
+        executable "../../scripts/clean-rust-lib.sh" // NOTE: Cleans rust libs before a rebuild.
+    }
+    dependsOn "cargoBuild"
+}
+
+cargo {
+    println "[INFO] running 'cargoBuild' task in '$cargoProfile' profile"
+
+    targets = [ "arm64" ]
+    profile = cargoProfile
+    libname = "sentinel-strongbox"
+    targetIncludes = ['libsentinel_strongbox.so']
+    targetDirectory = "../../rust/ptokens-core-private/target"
+    module  = "../../rust/ptokens-core-private/v3_bridges/evm/sentinel-strongbox"
+}
+
+tasks.whenTaskAdded { task ->
+    if ((task.name == 'mergeDebugJniLibFolders' || task.name == 'mergeReleaseJniLibFolders')) {
+        // NOTE: Require cargo to be run before copying native libraries.
+        task.dependsOn 'cargoBuild'
+    }
+}
+
 dependencies {
-    // The version of react-native is set by the React Native Gradle Plugin
     implementation project(path: ':sqlite3')
     implementation("com.facebook.react:react-android")
     implementation 'com.google.android.gms:play-services-safetynet:18.0.1'
