@@ -2,7 +2,7 @@ import React from 'react'
 import {NativeModules, Button} from 'react-native'
 import {promisifyCallbackFxn} from '../utils.js'
 
-const dropDb = _ =>
+const dropDb = () =>
   promisifyCallbackFxn(NativeModules.RustBridge.dropDb, [])
 
 const DropDbButton = () => {
