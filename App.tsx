@@ -11,7 +11,6 @@ import {
 
 import DropDbButton from './components/drop-db'
 import WebSockets from './components/web-sockets'
-import TestButton from './components/test-button.jsx'
 import WebSocketsUrl from './components/web-sockets-url'
 import {Colors} from 'react-native/Libraries/NewAppScreen'
 
@@ -29,7 +28,6 @@ function App(): JSX.Element {
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
           backgroundColor={backgroundStyle.backgroundColor}
         />
-        <TestButton />
         <WebSockets />
         <WebSocketsUrl />
         <DropDbButton />
