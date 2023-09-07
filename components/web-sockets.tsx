@@ -1,17 +1,26 @@
 import {useAppDispatch} from '../state/store'
+import {promisifyCallbackFxn} from '../utils.js'
 import {RootState, useAppSelector} from '../state/store'
 import {setWebSocketState} from '../state/web-sockets-slice'
-import {WEB_SOCKET_CONNECTION_STATUS} from '../lib/constants'
 import useWebSocket, {ReadyState} from 'react-native-use-websocket'
-import React, {useMemo, useRef, FC, useEffect, useState} from 'react'
+import React, {FC, useState} from 'react'
+import {setLastSent, setLastReceived} from '../state/strongbox-slice'
+import {WEB_SOCKET_CONNECTION_STATUS, NULL_STRING} from '../lib/constants'
 import { Text, View, StyleSheet, Pressable, NativeModules, Button } from 'react-native'
 
 // NOTE: Docs: https://github.com/Sumit1993/react-native-use-websocket#readme
 
+const callRustCore = (_arg: String) =>
+  promisifyCallbackFxn(NativeModules.RustBridge.callRustCore, [_arg])
+
 interface WebSocketProps {}
 
 const WebSockets: FC<WebSocketProps> = () => {
-  const [info, setInfo] = useState('nothing yet')
+  const [lastMsgSentToStrongbox, setLastMsgSentToStrongbox] = useState(NULL_STRING)
+  const [lastMsgReceivedFromStrongbox, setLastMsgReceivedFromStrongbox] = useState(NULL_STRING)
+
+  const [lastMsgSentToWebSocket, setLastMsgSentToWebSocket] = useState(NULL_STRING)
+  const [lastMsgReceivedFromWebSocket, setLastMsgReceivedFromWebSocket] = useState(NULL_STRING)
 
   const dispatch = useAppDispatch()
 
@@ -27,18 +36,26 @@ const WebSockets: FC<WebSocketProps> = () => {
   const {
     readyState,
     sendMessage,
-    lastMessage,
-    getWebSocket,
-    sendJsonMessage,
-    lastJsonMessage,
+    //lastMessage,
+    //getWebSocket,
+    //sendJsonMessage,
+    //lastJsonMessage,
   } = useWebSocket(webSocketUrl, {
       onOpen: () => {
         console.log('web socket opened')
         dispatch(setWebSocketState(ReadyState.OPEN))
       },
       onMessage: ({ data }) => {
-        console.log('message received: ', data)
-        setInfo(data)
+        // FIXME set in redux too
+        //dispatch(setLastSent(url))
+        setLastMsgSentToStrongbox(data)
+        setLastMsgReceivedFromWebSocket(data)
+        callRustCore(data)
+          .then((r: string) => {
+            setLastMsgReceivedFromStrongbox(r)
+            sendMessage(r)
+            setLastMsgSentToWebSocket(r)
+          })
       },
       onClose: ({ reason }) => {
         console.log(`web socket closed reason: ${reason}`)
@@ -64,16 +81,13 @@ const WebSockets: FC<WebSocketProps> = () => {
   return (
     <View
       style={{
-        borderWidth: 10,
-        borderRadius: 50,
-        borderColor: 'white',
         flexDirection: 'row',
         justifyContent: 'center',
         backgroundColor: '#fc7f50',
       }}>
       <Pressable onPress={onPress}>
         <Text style={{color: 'white', fontWeight: 'bold'}}>
-          WEBSOCKETS BUTTON
+          WEBSOCKETS STUFF
         </Text>
 
         <Text style={{color: 'white', fontWeight: 'bold'}}>
@@ -85,7 +99,19 @@ const WebSockets: FC<WebSocketProps> = () => {
         </Text>
 
         <Text style={{color: 'white', fontWeight: 'bold'}}>
-          {`current info from socket: '${info}'`}
+          {`last msg sent to websocket: '${lastMsgSentToWebSocket}'`}
+        </Text>
+
+        <Text style={{color: 'white', fontWeight: 'bold'}}>
+          {`last msg received from websocket: '${lastMsgReceivedFromWebSocket}'`}
+        </Text>
+
+        <Text style={{color: 'white', fontWeight: 'bold'}}>
+          {`last msg sent to strongbox: '${lastMsgSentToStrongbox}'`}
+        </Text>
+
+        <Text style={{color: 'white', fontWeight: 'bold'}}>
+          {`last msg received from strongbox: '${lastMsgReceivedFromStrongbox}'`}
         </Text>
       </Pressable>
     </View>
