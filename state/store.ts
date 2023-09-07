@@ -1,4 +1,5 @@
 import {configureStore} from '@reduxjs/toolkit'
+import strongboxReducer from './strongbox-slice'
 import webSocketReducer from './web-sockets-slice'
 import {TypedUseSelectorHook, useDispatch, useSelector} from 'react-redux'
 
@@ -8,6 +9,7 @@ type AppDispatch = typeof store.dispatch
 export const store = configureStore({
   reducer: {
     webSocket: webSocketReducer,
+    strongbox: strongboxReducer,
   },
 })
 

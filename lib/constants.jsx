@@ -10,8 +10,10 @@ const WEB_SOCKET_CONNECTION_STATUS = {
   [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
 }
 
+const NULL_STRING = 'null'
 
 export {
+  NULL_STRING,
   DEFAULT_WS_URL,
   WEB_SOCKET_CONNECTION_STATUS,
 }
