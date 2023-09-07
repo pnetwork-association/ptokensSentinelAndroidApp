@@ -10,7 +10,7 @@ cd "./rust/ptokens-core-private/v3_bridges/evm/sentinel-strongbox/"
 
 cargoBuildProfile="release"
 
-if [ -v $CARGO_BUILD_PROFILE ]; then
+if [ -v CARGO_BUILD_PROFILE ]; then
    cargoBuildProfile=$CARGO_BUILD_PROFILE
 fi
 echo "here: $cargoBuildProfile"
