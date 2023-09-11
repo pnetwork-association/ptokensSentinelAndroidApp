@@ -170,6 +170,26 @@ public class DatabaseWiring implements DatabaseInterface {
         DB_TX_IN_PROGRESS = true;
     }
 
+    public void cancelTransaction() throws DatabaseException {
+        Log.i(TAG, "cancelling db tx...");
+
+        if (END_DB_TX_IN_PROGRESS || START_DB_TX_IN_PROGRESS) {
+            if (END_DB_TX_IN_PROGRESS) {
+                Log.i(TAG, "cannot cancel db tx, ending tx is in progress");
+            } else {
+                Log.i(TAG, "cannot cancel db tx, starting tx is in progress");
+            }
+            throw new DatabaseException("cancelling db tx failed");
+        }
+
+
+        DB_TX_IN_PROGRESS = false;
+        END_DB_TX_IN_PROGRESS = false;
+        START_DB_TX_IN_PROGRESS = false;
+
+        Log.i(TAG, "db tx cancelled");
+    }
+
     @Override
     public void endTransaction() throws DatabaseException {
         Log.i(TAG, "ending db tx...");
