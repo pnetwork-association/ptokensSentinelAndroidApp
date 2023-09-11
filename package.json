@@ -12,6 +12,7 @@
     "android": "react-native run-android",
     "buildRustLib": "./scripts/build-rust-lib.sh",
     "cleanRustLib": "./scripts/clean-rust-lib.sh",
+    "updateCore": "./scripts/update-ptokens-core.sh",
     "cleanAndroidBuildDirs": "./scripts/clean-android-build-dirs.sh"
   },
   "dependencies": {
