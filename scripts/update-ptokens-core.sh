@@ -5,6 +5,9 @@ cd "$(dirname -- $0)"
 echo updating ptokens-core-private
 cd ../rust/ptokens-core-private
 
+echo stashing any staged work...
+git stash
+
 echo checking out sentinel branch...
 git checkout sentinel
 
