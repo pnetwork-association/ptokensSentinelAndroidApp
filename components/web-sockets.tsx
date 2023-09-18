@@ -24,6 +24,9 @@ const WebSockets: FC<WebSocketProps> = () => {
 
   const dispatch = useAppDispatch()
 
+  const sliceDataForDisplay = (_s: String) =>
+    `${_s.slice(0, 60)}...`
+
   const getRandomNum = (): number => {
     return Math.floor(Math.random() * 10)
   }
@@ -47,14 +50,15 @@ const WebSockets: FC<WebSocketProps> = () => {
       },
       onMessage: ({ data }) => {
         // FIXME set in redux too
-        //dispatch(setLastSent(url))
-        setLastMsgSentToStrongbox(data)
-        setLastMsgReceivedFromWebSocket(data)
+        let slicedData = sliceDataForDisplay(data)
+        setLastMsgSentToStrongbox(slicedData)
+        setLastMsgReceivedFromWebSocket(slicedData)
         callRustCore(data)
-          .then((r: string) => {
-            setLastMsgReceivedFromStrongbox(r)
-            sendMessage(r)
-            setLastMsgSentToWebSocket(r)
+          .then((_data: string) => {
+            let slicedData = sliceDataForDisplay(_data)
+            setLastMsgReceivedFromStrongbox(slicedData)
+            sendMessage(_data)
+            setLastMsgSentToWebSocket(slicedData)
           })
       },
       onClose: ({ reason }) => {
