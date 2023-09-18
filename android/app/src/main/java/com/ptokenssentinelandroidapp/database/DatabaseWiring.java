@@ -223,6 +223,7 @@ public class DatabaseWiring implements DatabaseInterface {
             db.endTransaction();
             DB_TX_IN_PROGRESS = false;
             END_DB_TX_IN_PROGRESS = false;
+            START_DB_TX_IN_PROGRESS = false;
             Log.v(TAG, "keys written, db tx ended successfully");
         }
         /*

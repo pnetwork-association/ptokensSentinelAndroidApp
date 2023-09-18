@@ -31,7 +31,7 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
     val helper = SQLiteHelper(context)
     var db: SQLiteDatabase? = null
     //if (flagWriteableDatabase) {
-      db = helper.writableDatabase
+    db = helper.writableDatabase
     //} else if (flagReadableDatabase) {
     //  db = helper.readableDatabase
     //}
@@ -46,7 +46,6 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
   @ReactMethod
   fun callRustCore(b64Input: String, callback: Callback) {
     var context = this.reactApplicationContext.applicationContext;
-    //var db: DatabaseWiring = DatabaseWiring(context, this.getSqlDatabase(context), false)
     Log.d("[DEBUG]" + this.TAG, "`callRustCore` called with with str: $b64Input")
     callback.invoke(callCore(this.db, b64Input))
   }
