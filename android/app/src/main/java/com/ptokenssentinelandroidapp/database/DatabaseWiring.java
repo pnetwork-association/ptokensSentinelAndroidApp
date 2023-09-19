@@ -25,10 +25,9 @@ import io.ptokens.security.Strongbox;
 import io.ptokens.security.StrongboxException;
 import io.ptokens.utils.Operations;
 */
-/**
- * Implements the database interface to be exposed
- * to jni.
- */
+// NOTE: Can use `db.inTransaction() to deterimine tx status
+// https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#inTransaction()
+
 public class DatabaseWiring implements DatabaseInterface {
     // FIXME rm!
     public static void callback() { 
@@ -170,6 +169,13 @@ public class DatabaseWiring implements DatabaseInterface {
         DB_TX_IN_PROGRESS = true;
     }
 
+    public void clearCaches() {
+        Log.i(TAG, "clearing caches...");
+        this.cache.clear();
+        this.removedKeys = new ArrayList<>();
+        Log.i(TAG, "caches cleared");
+    }
+
     public void cancelTransaction() throws DatabaseException {
         Log.i(TAG, "cancelling db tx...");
 
@@ -186,6 +192,10 @@ public class DatabaseWiring implements DatabaseInterface {
         DB_TX_IN_PROGRESS = false;
         END_DB_TX_IN_PROGRESS = false;
         START_DB_TX_IN_PROGRESS = false;
+
+        // NOTE: Ending the tx without marking it successful is how we roll it back.
+        db.endTransaction();
+        this.clearCaches();
 
         Log.i(TAG, "db tx cancelled");
     }
@@ -219,6 +229,7 @@ public class DatabaseWiring implements DatabaseInterface {
             }
 
             db.setTransactionSuccessful();
+            this.clearCaches();
         } finally {
             db.endTransaction();
             DB_TX_IN_PROGRESS = false;
@@ -341,8 +352,10 @@ public class DatabaseWiring implements DatabaseInterface {
     @Override
     public void close() {
         SQLiteHelper helper = new SQLiteHelper(context);
+        // NOTE: This will rollback any db transactions in progress also.
         db.close();
         helper.close();
+        clearCaches();
         Log.w(TAG, "db closed");
     }
 

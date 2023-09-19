@@ -1,7 +1,5 @@
 package com.ptokenssentinelandroidapp
 
-import android.content.Context
-import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import com.facebook.react.bridge.Callback
 import com.facebook.react.bridge.ReactApplicationContext
@@ -13,13 +11,12 @@ import com.ptokenssentinelandroidapp.database.SQLiteHelper
 
 class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
   private external fun callCore(db: DatabaseWiring, input: String): String
+
   val context = this.reactApplicationContext.applicationContext
-  val TAG: String = "RustBridge"
-  val db: DatabaseWiring = DatabaseWiring(
-    this.context,
-    this.getSqlDatabase(this.context),
-    false
-  )
+
+  val CLASS_NAME: String = "RustBridge"
+
+  var db: DatabaseWiring? = null
 
   init {
     System.loadLibrary("sentinel_strongbox")
@@ -27,32 +24,71 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
 
   override fun getName() = "RustBridge"
 
-  fun getSqlDatabase(context: Context): SQLiteDatabase? {
-    val helper = SQLiteHelper(context)
-    var db: SQLiteDatabase? = null
-    //if (flagWriteableDatabase) {
-    db = helper.writableDatabase
-    //} else if (flagReadableDatabase) {
-    //  db = helper.readableDatabase
-    //}
-    Log.d("[DEBUG]" + this.TAG, "got SQL database")
-    return db
-  }
+  @ReactMethod
+  fun openDb(successCallback: Callback, failureCallback: Callback) {
+    Log.d("[INFO]" + this.CLASS_NAME, "opening db...")
+    if (this.db != null) {
+      Log.d("[DEBUG]" + this.CLASS_NAME, "db already opened")
+      successCallback.invoke()
+      return
+    } 
 
-  fun getDbWiring(): DatabaseWiring {
-    return db
+    try {
+      this.db = DatabaseWiring(this.context, SQLiteHelper(context).writableDatabase, false)
+      Log.d("[INFO]" + this.CLASS_NAME, "opened SQL database")
+      successCallback.invoke()
+      return
+    } catch (e: Exception) {
+      Log.d("[ERROR]" + this.CLASS_NAME, "error opening SQL database $e")
+      failureCallback.invoke(e.message)
+      return
+    }
   }
 
   @ReactMethod
-  fun callRustCore(b64Input: String, callback: Callback) {
-    var context = this.reactApplicationContext.applicationContext;
-    Log.d("[DEBUG]" + this.TAG, "`callRustCore` called with with str: $b64Input")
-    callback.invoke(callCore(this.db, b64Input))
+  fun closeDb(successCallback: Callback, failureCallback: Callback) {
+    Log.d("[INFO]" + this.CLASS_NAME, "closing db...")
+    if (this.db == null) {
+      Log.d("[DEBUG]" + this.CLASS_NAME, "db already closed")
+      successCallback.invoke()
+      return
+    } 
+
+    try {
+      SQLiteHelper(context).close()
+      this.db = null
+      Log.d("[DEBUG]" + this.CLASS_NAME, "closed SQL database")
+      successCallback.invoke()
+      return
+    } catch (e: Exception) {
+      Log.d("[ERROR]" + this.CLASS_NAME, "error closing SQL database $e")
+      failureCallback.invoke(e.message)
+      return
+    }
   }
 
   @ReactMethod
-  fun dropDb(callback: Callback) {
-    db.drop()
-    Log.d("[WARN]" + this.TAG, "database dropped!")
+  fun callRustCore(b64Input: String, successCallback: Callback, failureCallback: Callback) {
+    try {
+      Log.d("[INFO]" + this.CLASS_NAME, "`callRustCore` successfully")
+      successCallback.invoke(callCore(this.db!!, b64Input))
+      return
+    } catch(e: Exception) {
+      Log.d("[ERROR]" + this.CLASS_NAME, "failed to call rust core with exception: $e")
+      failureCallback.invoke(e.message)
+      return
+    }
+  }
+
+  @ReactMethod
+  fun dropDb(successCallback: Callback, failureCallback: Callback) {
+    try {
+      this.db!!.drop()
+      Log.d("[INFO]" + this.CLASS_NAME, "database dropped!")
+      successCallback.invoke()
+    } catch(e: Exception) {
+      Log.d("[ERROR]" + this.CLASS_NAME, "could not drop database, it was null")
+      failureCallback.invoke(e.message)
+    }
   }
 }

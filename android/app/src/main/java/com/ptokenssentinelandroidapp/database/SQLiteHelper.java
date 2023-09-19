@@ -119,9 +119,7 @@ public class SQLiteHelper extends SQLiteOpenHelper {
     static void deleteKey(SQLiteDatabase db, String key) {
         String selection = DatabaseContract.DatabaseEntry.FIELD_KEY + " = ?";
         String[] selectionArgs = { key };
-
-        int n = db.delete(DatabaseContract.DatabaseEntry.TABLE_NAME, selection, selectionArgs);
-        Log.d(TAG,  n + " records removed");
+        db.delete(DatabaseContract.DatabaseEntry.TABLE_NAME, selection, selectionArgs);
     }
 
     static void drop(Context context) {
