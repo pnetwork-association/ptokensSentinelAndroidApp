@@ -2,7 +2,7 @@ module.exports = {
   root: true,
   extends: '@react-native',
   rules: {
-    "prettier/prettier": "off",
+    'prettier/prettier': 'off',
     semi: 0,
   },
 }
