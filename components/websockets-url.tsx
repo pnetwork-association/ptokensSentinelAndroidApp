@@ -1,7 +1,7 @@
 import React, {FC, useState} from 'react'
 import {useAppDispatch} from '../state/store'
 import {DEFAULT_WS_URL} from '../lib/constants'
-import {setWebSocketUrl} from '../state/web-sockets-slice'
+import {websocketSetUrl} from '../state/websockets-slice'
 import {TextInput, Text, View, Pressable} from 'react-native'
 
 interface WsUrlebSocketProps {}
@@ -13,7 +13,7 @@ const WebSocketsUrl: FC<WsUrlebSocketProps> = () => {
 
   const onSubmitEdit = (): void => {
     console.log(`setting web sockets url in state to '${url}`)
-    dispatch(setWebSocketUrl(url))
+    dispatch(websocketSetUrl(url))
   }
 
   return (

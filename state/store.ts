@@ -1,6 +1,6 @@
 import {configureStore} from '@reduxjs/toolkit'
 import strongboxReducer from './strongbox-slice'
-import webSocketReducer from './web-sockets-slice'
+import websocketReducer from './websockets-slice'
 import {TypedUseSelectorHook, useDispatch, useSelector} from 'react-redux'
 
 // Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
@@ -8,7 +8,7 @@ type AppDispatch = typeof store.dispatch
 
 export const store = configureStore({
   reducer: {
-    webSocket: webSocketReducer,
+    websocket: websocketReducer,
     strongbox: strongboxReducer,
   },
 })

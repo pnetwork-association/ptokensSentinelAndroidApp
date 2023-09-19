@@ -1,15 +1,19 @@
 import React from 'react'
 import {NativeModules, Button} from 'react-native'
-import {promisifyCallbackFxn} from '../utils.js'
 
 const dropDb = () =>
-  promisifyCallbackFxn(NativeModules.RustBridge.dropDb, [])
+  new Promise<void>((resolve, reject) =>
+    NativeModules.RustBridge.dropDb(
+      () => resolve(),
+      (e: string) => reject(e)
+    )
+  )
 
 const DropDbButton = () => {
-  const onPress = () => {
-    let b64Str = 'AQMDkBw'
-    dropDb().then(_ => console.log('db got dropped'))
-  }
+  const onPress = () =>
+    dropDb()
+      .then(_ => console.log('db got dropped'))
+      .catch(console.error)
 
   return <Button title="click to drop the db" color="#7c0a02" onPress={onPress} />
 }

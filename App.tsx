@@ -10,8 +10,8 @@ import {
 } from 'react-native'
 
 import DropDbButton from './components/drop-db'
-import WebSockets from './components/web-sockets'
-import WebSocketsUrl from './components/web-sockets-url'
+import Websockets from './components/websockets'
+import WebsocketsUrl from './components/websockets-url'
 import {Colors} from 'react-native/Libraries/NewAppScreen'
 
 function App(): JSX.Element {
@@ -28,8 +28,8 @@ function App(): JSX.Element {
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
           backgroundColor={backgroundStyle.backgroundColor}
         />
-        <WebSockets />
-        <WebSocketsUrl />
+        <Websockets />
+        <WebsocketsUrl />
         <DropDbButton />
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"

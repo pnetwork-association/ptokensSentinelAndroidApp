@@ -1,4 +1,4 @@
-import{ReadyState} from 'react-native-use-websocket'
+import {ReadyState} from 'react-native-use-websocket'
 
 const DEFAULT_WS_URL = 'ws://localhost:3000/ws'
 
