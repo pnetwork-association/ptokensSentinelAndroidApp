@@ -3,7 +3,7 @@
 After you have pulled the submodules for this repo, please navigate to:
 
 ```
-./rust/ptokens-core-private/v3_bridges/evm/sentinel-strongbox/
+./rust/ptokens-core/v3_bridges/evm/sentinel-strongbox/
 ```
 
 and read the `README.md` there.

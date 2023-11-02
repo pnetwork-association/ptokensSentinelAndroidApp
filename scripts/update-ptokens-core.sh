@@ -2,8 +2,8 @@
 
 cd "$(dirname -- $0)"
 
-echo updating ptokens-core-private
-cd ../rust/ptokens-core-private
+echo updating ptokens-core
+cd ../rust/ptokens-core
 
 echo stashing any staged work...
 git stash

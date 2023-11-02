@@ -15,7 +15,7 @@ do
 done
 
 if [ $showReadmeHelp = true ]; then
-   echo "see 'rust/ptokens-core-private/v3_bridges/evm/sentinel-strongbox/README.md' for more help"
+   echo "see 'rust/ptokens-core/v3_bridges/evm/sentinel-strongbox/README.md' for more help"
    exit 1
 fi
 

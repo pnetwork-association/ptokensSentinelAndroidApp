@@ -6,7 +6,7 @@ cd "$(dirname -- $0)"
 
 npm run cleanRustLib
 
-cd "./rust/ptokens-core-private/v3_bridges/evm/sentinel-strongbox/"
+cd "./rust/ptokens-core/v3_bridges/evm/sentinel-strongbox/"
 
 cargoBuildProfile="release"
 
