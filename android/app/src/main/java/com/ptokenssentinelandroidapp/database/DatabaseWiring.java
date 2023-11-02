@@ -121,7 +121,8 @@ public class DatabaseWiring implements DatabaseInterface {
                 try {
                     return readCache(hexKey);
                 } catch (NullPointerException e) {
-                    Log.d(TAG, "get: value for " + hexKey + " not in cache, checking db...");
+                    // NOTE: This log prints a LOT and I'm not sure it's useful enough to warrant the overhead
+                    //Log.d(TAG, "get: value for " + hexKey + " not in cache, checking db...");
                     return readDatabase(hexKey);
                 }
             }
