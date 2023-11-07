@@ -7,10 +7,11 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.ptokenssentinelandroidapp.database.DatabaseWiring
 import com.ptokenssentinelandroidapp.database.SQLiteHelper
+import com.ptokenssentinelandroidapp.strongbox.Strongbox
 
 
 class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
-  private external fun callCore(db: DatabaseWiring, input: String): String
+  private external fun callCore(strongbox: Strongbox, db: DatabaseWiring, input: String): String
 
   val context = this.reactApplicationContext.applicationContext
 
@@ -18,8 +19,11 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
 
   var db: DatabaseWiring? = null
 
+  var strongbox: Strongbox? = null
+
   init {
     System.loadLibrary("sentinel_strongbox")
+    this.strongbox = Strongbox()
   }
 
   override fun getName() = "RustBridge"
@@ -71,7 +75,7 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
   fun callRustCore(b64Input: String, successCallback: Callback, failureCallback: Callback) {
     try {
       Log.d("[INFO]" + this.CLASS_NAME, "`callRustCore` successfully")
-      successCallback.invoke(callCore(this.db!!, b64Input))
+      successCallback.invoke(callCore(this.strongbox!!, this.db!!, b64Input))
       return
     } catch(e: Exception) {
       Log.d("[ERROR]" + this.CLASS_NAME, "failed to call rust core with exception: $e")

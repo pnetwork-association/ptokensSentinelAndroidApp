@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -19,10 +20,10 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.Signature;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Enumeration;
 
@@ -37,7 +38,7 @@ import javax.crypto.spec.GCMParameterSpec;
 
 import com.ptokenssentinelandroidapp.strongbox.AttestationCertificate;
 
-public class Strongbox {
+public class Strongbox implements StrongboxInterface {
     private static final String TAG = Strongbox.class.getName();
     private static final String ANDROID_KEY_STORE = "AndroidKeyStore";
     private static final String ALIAS_SECRET_KEY = "io.ptokens.secretkey";
@@ -126,10 +127,39 @@ public class Strongbox {
         }
     }
 
-    public static void initializeKeystore(boolean withStrongBox)  {
+    public static boolean secretKeyExists(KeyStore ks) throws KeyStoreException {
+        return ks.containsAlias(ALIAS_SECRET_KEY);
+    }
+
+    public static boolean attestationKeyExists(KeyStore ks) throws KeyStoreException {
+        return ks.containsAlias(ALIAS_ATTESTATION_KEY);
+    }
+
+    public KeyStore loadKeystore() throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
         try {
-            KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
+            KeyStore ks = KeyStore.getInstance(Strongbox.ANDROID_KEY_STORE);
             ks.load(null);
+            return ks;
+        } catch (Exception e) {
+            Log.e(TAG,"failed to load keystore:", e);
+            throw e;
+        }
+    }
+    @Override
+    public boolean keystoreIsInitialized() throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException {
+        try {
+            KeyStore ks = loadKeystore();
+            boolean r = secretKeyExists(ks) && attestationKeyExists(ks);
+            return r;
+        } catch (Exception e) {
+            Log.e(TAG,"failed to load keystore:", e);
+            return false;
+        }
+    }
+
+    public void initializeKeystore(boolean withStrongBox)  {
+        try {
+            KeyStore ks = loadKeystore();
             generateSecretKey(withStrongBox);
             generateSigningKey(ALIAS_ATTESTATION_KEY, withStrongBox);
             Log.d(TAG, "✔ Keystore initialized");
@@ -141,17 +171,21 @@ public class Strongbox {
     private static Key getSecretKey()
             throws
             KeyStoreException,
+            StrongboxException,
             NoSuchAlgorithmException,
             UnrecoverableEntryException {
-
         KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
         try {
             ks.load(null);
         } catch (Exception e) {
             Log.e(TAG, "✘ getSecretKey: Failed to load the keystore", e);
         }
-
-        return ks.getKey(ALIAS_SECRET_KEY, null);
+        try {
+            return ks.getKey(ALIAS_SECRET_KEY, null);
+        } catch(Exception e) {
+            Log.e(TAG, "failed to get secret key", e);
+            throw new StrongboxException(e);
+        }
     }
 
     public static void removeKey(String alias) {
@@ -197,7 +231,8 @@ public class Strongbox {
                 | NoSuchAlgorithmException
                 | NoSuchPaddingException
                 | UnrecoverableEntryException
-                | KeyStoreException e) {
+                | KeyStoreException
+                | StrongboxException e) {
             Log.e(TAG, "✘ encrypt: Failed to encrypt data", e);
         }
         return new byte[1];
@@ -233,13 +268,14 @@ public class Strongbox {
                 | NoSuchPaddingException
                 | InvalidAlgorithmParameterException
                 | UnrecoverableEntryException
-                | KeyStoreException e) {
+                | KeyStoreException
+                | StrongboxException e) {
             Log.e(TAG, "✘ decrypt: Failed to decrypt data", e);
         }
         return new byte[1];
     }
 
-    public static byte[] signWithAttestionKey(byte[] data) {
+    public static byte[] signWithAttestationKey(byte[] data) {
         return sign(ALIAS_ATTESTATION_KEY, data);
     }
 
@@ -278,7 +314,7 @@ public class Strongbox {
                 return false;
             }
             Signature s = Signature.getInstance("SHA256withECDSA");
-            s.initVerify(((KeyStore.PrivateKeyEntry) entry).getCertificate());  
+            s.initVerify(((KeyStore.PrivateKeyEntry) entry).getCertificate());
             s.update(message);
 
             return s.verify(signature);
