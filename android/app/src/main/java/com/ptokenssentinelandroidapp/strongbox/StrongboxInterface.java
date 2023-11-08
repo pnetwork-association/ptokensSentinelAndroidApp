@@ -8,4 +8,5 @@ import java.security.cert.CertificateException;
 public interface StrongboxInterface {
     boolean keystoreIsInitialized() throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException;
     void initializeKeystore();
+    String getCertificateAttestation();
 }

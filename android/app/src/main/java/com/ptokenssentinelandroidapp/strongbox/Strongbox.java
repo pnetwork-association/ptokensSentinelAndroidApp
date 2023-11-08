@@ -166,6 +166,7 @@ public class Strongbox implements StrongboxInterface {
             return false;
         }
     }
+
     public boolean strongboxIsAvailable() {
         return context.getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE);
@@ -370,16 +371,13 @@ public class Strongbox implements StrongboxInterface {
         return latestAlias;
     }
 
-    public static String getCertificateAttestation() {
+    @Override
+    public String getCertificateAttestation() {
         try {
             KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
             ks.load(null);
-            // Certificate c = ks.getCertificate(ALIAS_ATTESTATION_KEY);
-            // Log.d(TAG, "✔ " + c.toString());
 
             Certificate[] certificateChain = ks.getCertificateChain(ALIAS_ATTESTATION_KEY);
-
-            // Log.d(TAG, "✔ certificate chain len is: " + certificateChain.length);
 
             byte[] leaf = certificateChain[0].getEncoded();
             byte[] intermediate = certificateChain[1].getEncoded();
