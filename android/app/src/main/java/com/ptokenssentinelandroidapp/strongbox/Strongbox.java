@@ -57,8 +57,7 @@ public class Strongbox implements StrongboxInterface {
         this.context = context;
     }
 
-    private static void generateSecretKey(boolean withStrongBox) {
-
+    private void generateSecretKey(boolean withStrongBox) {
         try {
             KeyStore ks = KeyStore.getInstance(Strongbox.ANDROID_KEY_STORE);
             ks.load(null);
@@ -100,7 +99,7 @@ public class Strongbox implements StrongboxInterface {
         }
     }
 
-    public static void generateSigningKey(String alias, boolean withStrongBox) {
+    private void generateSigningKey(String alias, boolean withStrongBox) {
         try {
             KeyStore ks = KeyStore.getInstance(Strongbox.ANDROID_KEY_STORE);
             ks.load(null);
@@ -137,15 +136,15 @@ public class Strongbox implements StrongboxInterface {
         }
     }
 
-    public static boolean secretKeyExists(KeyStore ks) throws KeyStoreException {
+    private static boolean secretKeyExists(KeyStore ks) throws KeyStoreException {
         return ks.containsAlias(ALIAS_SECRET_KEY);
     }
 
-    public static boolean attestationKeyExists(KeyStore ks) throws KeyStoreException {
+    private static boolean attestationKeyExists(KeyStore ks) throws KeyStoreException {
         return ks.containsAlias(ALIAS_ATTESTATION_KEY);
     }
 
-    public KeyStore loadKeystore() throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
+    private KeyStore loadKeystore() throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
         try {
             KeyStore ks = KeyStore.getInstance(Strongbox.ANDROID_KEY_STORE);
             ks.load(null);
@@ -167,7 +166,9 @@ public class Strongbox implements StrongboxInterface {
         }
     }
 
-    public boolean strongboxIsAvailable() {
+    private boolean strongboxIsAvailable() {
+        // NOTE: Determines whether or not the device is able to use the strongbox secure element,
+        // which is a stronger security model than just the normal android TEE.
         return context.getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE);
     }
@@ -187,7 +188,7 @@ public class Strongbox implements StrongboxInterface {
         }
     }
 
-    private static Key getSecretKey()
+    private Key getSecretKey()
             throws
             KeyStoreException,
             StrongboxException,
@@ -207,7 +208,7 @@ public class Strongbox implements StrongboxInterface {
         }
     }
 
-    public static void removeKey(String alias) {
+    private void removeKey(String alias) {
         try {
             KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
             ks.load(null);
@@ -216,11 +217,10 @@ public class Strongbox implements StrongboxInterface {
         } catch (Exception e) {
             Log.e(TAG, "✘ removeKey: Failed to remove key from keystore", e);
         }
-
     }
 
-    public static byte[] encrypt(byte[] data) {
-
+    @Override
+    public byte[] encrypt(byte[] data) {
         try {
             Key key = getSecretKey();
             final Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
@@ -257,7 +257,8 @@ public class Strongbox implements StrongboxInterface {
         return new byte[1];
     }
 
-    public static byte[] decrypt(byte[] data) {
+    @Override
+    public byte[] decrypt(byte[] data) {
         try {
             Key key = getSecretKey();
             byte[] iv = new byte[12];
@@ -299,7 +300,7 @@ public class Strongbox implements StrongboxInterface {
         return sign(ALIAS_ATTESTATION_KEY, data);
     }
 
-    public byte[] sign(String alias, byte[] data) {
+    private byte[] sign(String alias, byte[] data) {
         byte[] signature = null;
         try {
             KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
@@ -324,7 +325,7 @@ public class Strongbox implements StrongboxInterface {
         return signature;
     }
 
-    public boolean verify(String alias, byte[] message, byte[] signature) {
+    private boolean verify(String alias, byte[] message, byte[] signature) {
         try {
             KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
             ks.load(null);
@@ -344,7 +345,7 @@ public class Strongbox implements StrongboxInterface {
         return false;
     }
 
-    public static int getLatestAliasNumber() {
+    private int getLatestAliasNumber() {
         int latestAlias = -1;
 
         try {
