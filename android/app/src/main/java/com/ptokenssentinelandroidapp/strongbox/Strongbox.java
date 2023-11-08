@@ -294,11 +294,12 @@ public class Strongbox implements StrongboxInterface {
         return new byte[1];
     }
 
-    public static byte[] signWithAttestationKey(byte[] data) {
+    @Override
+    public byte[] signWithAttestationKey(byte[] data) {
         return sign(ALIAS_ATTESTATION_KEY, data);
     }
 
-    public static byte[] sign(String alias, byte[] data) {
+    public byte[] sign(String alias, byte[] data) {
         byte[] signature = null;
         try {
             KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
@@ -323,7 +324,7 @@ public class Strongbox implements StrongboxInterface {
         return signature;
     }
 
-    public static boolean verify(String alias, byte[] message, byte[] signature) {
+    public boolean verify(String alias, byte[] message, byte[] signature) {
         try {
             KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
             ks.load(null);
