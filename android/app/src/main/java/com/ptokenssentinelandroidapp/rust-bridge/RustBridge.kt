@@ -23,7 +23,7 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
 
   init {
     System.loadLibrary("sentinel_strongbox")
-    this.strongbox = Strongbox()
+    this.strongbox = Strongbox(this.context)
   }
 
   override fun getName() = "RustBridge"

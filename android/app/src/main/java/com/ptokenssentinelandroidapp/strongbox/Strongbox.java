@@ -1,5 +1,8 @@
 package com.ptokenssentinelandroidapp.strongbox;
 
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyProperties;
@@ -25,7 +28,9 @@ import java.security.UnrecoverableEntryException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.spec.ECGenParameterSpec;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -46,6 +51,11 @@ public class Strongbox implements StrongboxInterface {
     public static final String ALIAS_STATE_SIGNING_KEY_SEPARATOR = "-";
     private static final String ALIAS_ATTESTATION_KEY = "io.ptokens.attestation";
     private static final String CIPHER_TRANSFORMATION = "AES/GCM/NoPadding";
+    private Context context;
+
+    public Strongbox(Context context) {
+        this.context = context;
+    }
 
     private static void generateSecretKey(boolean withStrongBox) {
 
@@ -67,9 +77,9 @@ public class Strongbox implements StrongboxInterface {
                         .setIsStrongBoxBacked(withStrongBox)
                         .build());
 
-                Log.i(TAG, "✔ Secret key generated, strongbox: " + withStrongBox);
 
                 SecretKey key = generator.generateKey();
+                Log.i(TAG, "✔ Secret key generated, strongbox: " + withStrongBox);
 
                 SecretKeyFactory factory = SecretKeyFactory.getInstance(
                         key.getAlgorithm(),
@@ -156,12 +166,20 @@ public class Strongbox implements StrongboxInterface {
             return false;
         }
     }
+    public boolean strongboxIsAvailable() {
+        return context.getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE);
+    }
 
-    public void initializeKeystore(boolean withStrongBox)  {
+    @Override
+    public void initializeKeystore()  {
+        boolean withStrongbox = this.strongboxIsAvailable();
+        Log.d(TAG, "has strongbox feature: " + Boolean.toString(withStrongbox));
+
         try {
             KeyStore ks = loadKeystore();
-            generateSecretKey(withStrongBox);
-            generateSigningKey(ALIAS_ATTESTATION_KEY, withStrongBox);
+            generateSecretKey(withStrongbox);
+            generateSigningKey(ALIAS_ATTESTATION_KEY, withStrongbox);
             Log.d(TAG, "✔ Keystore initialized");
         } catch (Exception e) {
             Log.e(TAG,"✘ initializeKeystore: Failed to initialize the keystore", e);
