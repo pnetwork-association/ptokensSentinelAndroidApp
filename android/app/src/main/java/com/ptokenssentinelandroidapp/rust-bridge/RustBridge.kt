@@ -23,6 +23,8 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
 
   init {
     System.loadLibrary("sentinel_strongbox")
+    System.loadLibrary("sqliteX")
+    System.loadLibrary("shathree")
     this.strongbox = Strongbox(this.context)
   }
 
@@ -35,10 +37,17 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
       Log.d("[DEBUG]" + this.CLASS_NAME, "db already opened")
       successCallback.invoke()
       return
-    } 
+    }
 
     try {
-      this.db = DatabaseWiring(this.context, SQLiteHelper(context).writableDatabase, false)
+      val verifyStateHash = true
+      val writeStateHash = true
+      this.db = DatabaseWiring(
+        this.context,
+        SQLiteHelper(context).writableDatabase,
+        verifyStateHash,
+        writeStateHash
+      )
       Log.d("[INFO]" + this.CLASS_NAME, "opened SQL database")
       successCallback.invoke()
       return
@@ -56,7 +65,7 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
       Log.d("[DEBUG]" + this.CLASS_NAME, "db already closed")
       successCallback.invoke()
       return
-    } 
+    }
 
     try {
       SQLiteHelper(context).close()
