@@ -24,9 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.ptokenssentinelandroidapp.strongbox.Strongbox;
 import com.ptokenssentinelandroidapp.strongbox.StrongboxException;
 
-// NOTE: Can use `db.inTransaction() to deterimine tx status
-// https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#inTransaction()
-
 public class DatabaseWiring implements DatabaseInterface {
     public static final String TAG = DatabaseWiring.class.getName();
     private static final String NAME_SIGNED_STATE_HASH = "state-hash.sig";
@@ -179,16 +176,18 @@ public class DatabaseWiring implements DatabaseInterface {
             throw new DatabaseException("cancelling db tx failed");
         }
 
-
         DB_TX_IN_PROGRESS = false;
         END_DB_TX_IN_PROGRESS = false;
         START_DB_TX_IN_PROGRESS = false;
 
-        // NOTE: Ending the tx without marking it successful is how we roll it back.
-        db.endTransaction();
-        this.clearCaches();
-
-        Log.i(TAG, "db tx cancelled");
+        if (db.inTransaction()) {
+            // NOTE: Ending the tx without marking it successful is how we roll it back.
+            db.endTransaction();
+            this.clearCaches();
+            Log.i(TAG, "db tx cancelled");
+        } else {
+            Log.i(TAG, "no db tx in progress to cancel");
+        }
     }
 
     @Override
