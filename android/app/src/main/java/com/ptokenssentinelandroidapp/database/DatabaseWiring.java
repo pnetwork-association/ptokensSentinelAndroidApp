@@ -28,12 +28,6 @@ import com.ptokenssentinelandroidapp.strongbox.StrongboxException;
 // https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#inTransaction()
 
 public class DatabaseWiring implements DatabaseInterface {
-    // FIXME rm!
-    public static void callback() {
-        System.out.println("database wiring called From JNI");
-    }
-
-
     public static final String TAG = DatabaseWiring.class.getName();
     private static final String NAME_SIGNED_STATE_HASH = "state-hash.sig";
 
