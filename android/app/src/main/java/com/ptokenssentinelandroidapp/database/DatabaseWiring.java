@@ -1,5 +1,7 @@
 package com.ptokenssentinelandroidapp.database;
 
+import static com.ptokenssentinelandroidapp.database.Operations.deleteFile;
+
 import android.content.Context;
 import android.database.CursorIndexOutOfBoundsException;
 
@@ -362,5 +364,8 @@ public class DatabaseWiring implements DatabaseInterface {
     public void drop() {
         // FIXME gate this somehow (debug signature?)
         SQLiteHelper.drop(context);
+        // NOTE: If we're dropping the db, we also need to drop the signature & hash since 
+        // otherwise db state verification (if enabled) would fail.
+        deleteFile(NAME_SIGNED_STATE_HASH);
     }
 }
