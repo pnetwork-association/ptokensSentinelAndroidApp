@@ -234,6 +234,7 @@ public class DatabaseWiring implements DatabaseInterface {
             START_DB_TX_IN_PROGRESS = false;
             Log.v(TAG, "keys written, db tx ended successfully");
         }
+
         try {
             if (writeSignedStateHashEnabled) {
                 writeSignedStateHash();
@@ -242,8 +243,6 @@ public class DatabaseWiring implements DatabaseInterface {
             }
         } catch (DatabaseException e) {
             Log.e(TAG, "failed to write the state hash", e);
-        } finally {
-            START_DB_TX_IN_PROGRESS = false;
         }
     }
 
