@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Setup plugdev permissions for the device
+# Quick setup of the plugdev permissions for the when
+# attaching it to your laptop (run it once).
 #
 # Source:
 #   - https://developer.android.com/studio/run/device
