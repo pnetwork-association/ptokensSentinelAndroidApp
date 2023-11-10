@@ -142,12 +142,12 @@ public class DatabaseWiring implements DatabaseInterface {
 
         START_DB_TX_IN_PROGRESS = true;
 
-
         if (verifySignedStateHashEnabled) {
             try {
                 verifySignedStateHash();
             } catch (StrongboxException e) {
                 Log.e(TAG, "signed state hash verification failed!", e);
+                START_DB_TX_IN_PROGRESS = false;
                 throw new DatabaseException("Start tx failed");
             }
         } else {
