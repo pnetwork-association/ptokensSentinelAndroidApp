@@ -82,11 +82,11 @@ public class DatabaseWiring implements DatabaseInterface {
 
         removedKeys.remove(hexKey);
 
-        //if (dataSensitivity == (byte) 255) {
-            //cache.put(hexKey, Strongbox.encrypt(value));
-        //} else {
+        if (dataSensitivity == (byte) 255) {
+            cache.put(hexKey, Strongbox.encrypt(value));
+        } else {
             cache.put(hexKey, value);
-        //}
+        }
 
         Log.d(TAG, "put: key " + hexKey + " inserted in the cache");
     }
@@ -99,20 +99,18 @@ public class DatabaseWiring implements DatabaseInterface {
             if (removedKeys.contains(hexKey)) {
                 Log.d(TAG, "get: value for " + hexKey + " was removed");
                 throw new Exception("get: key " + hexKey + " not found");
-            /*
-            } else if (dataSensitivity == (byte) 255) {
+            }
+
+            if (dataSensitivity == (byte) 255) {
                 try {
                     return Strongbox.decrypt(readCache(hexKey));
                 } catch (NullPointerException e) {
                     return Strongbox.decrypt(readDatabase(hexKey));
                 }
-            */
             } else {
                 try {
                     return readCache(hexKey);
                 } catch (NullPointerException e) {
-                    // NOTE: This log prints a LOT and I'm not sure it's useful enough to warrant the overhead
-                    //Log.d(TAG, "get: value for " + hexKey + " not in cache, checking db...");
                     return readDatabase(hexKey);
                 }
             }

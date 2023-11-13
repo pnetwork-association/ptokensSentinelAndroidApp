@@ -220,7 +220,7 @@ public class Strongbox implements StrongboxInterface {
     }
 
     @Override
-    public byte[] encrypt(byte[] data) {
+    public static byte[] encrypt(byte[] data) {
         try {
             Key key = getSecretKey();
             final Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
@@ -258,7 +258,7 @@ public class Strongbox implements StrongboxInterface {
     }
 
     @Override
-    public byte[] decrypt(byte[] data) {
+    public static byte[] decrypt(byte[] data) {
         try {
             Key key = getSecretKey();
             byte[] iv = new byte[12];
