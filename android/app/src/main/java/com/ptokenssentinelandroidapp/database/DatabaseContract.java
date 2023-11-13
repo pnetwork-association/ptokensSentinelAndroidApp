@@ -21,6 +21,5 @@ final class DatabaseContract {
                 + FIELD_KEY
                 + ", sha3(" + FIELD_VALUE +") FROM "
                 + TABLE_NAME;
-        //final static String SQL_LOAD_EXTENSION = "SELECT load_extension('../libshathree.so');";
     }
 }

@@ -8,9 +8,9 @@ import android.os.Environment;
 import android.util.Log;
 import android.util.Pair;
 
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteCursor;
-import android.database.sqlite.SQLiteOpenHelper;
+import org.sqlite.database.sqlite.SQLiteDatabase;
+import org.sqlite.database.sqlite.SQLiteCursor;
+import org.sqlite.database.sqlite.SQLiteOpenHelper;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,13 +56,6 @@ public class SQLiteHelper extends SQLiteOpenHelper {
 
         db.replace(DatabaseContract.DatabaseEntry.TABLE_NAME, null, contentValues);
     }
-
-    /*
-    static void loadExtension(SQLiteDatabase db) {
-        db.execSQL(DatabaseContract.DatabaseEntry.SQL_LOAD_EXTENSION);
-        Log.d(TAG, "extension loaded");
-    }
-    */
 
     static byte[] getBytesFromKey(SQLiteDatabase db, String key) {
         String[] columns = { DatabaseContract.DatabaseEntry.FIELD_VALUE };

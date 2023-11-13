@@ -99,7 +99,7 @@ public class Strongbox implements StrongboxInterface {
         }
     }
 
-    private void generateSigningKey(String alias, boolean withStrongBox) {
+    public static void generateSigningKey(String alias, boolean withStrongBox) {
         try {
             KeyStore ks = KeyStore.getInstance(Strongbox.ANDROID_KEY_STORE);
             ks.load(null);
@@ -208,7 +208,7 @@ public class Strongbox implements StrongboxInterface {
         }
     }
 
-    private void removeKey(String alias) {
+    public static void removeKey(String alias) {
         try {
             KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
             ks.load(null);
@@ -300,7 +300,7 @@ public class Strongbox implements StrongboxInterface {
         return sign(ALIAS_ATTESTATION_KEY, data);
     }
 
-    private byte[] sign(String alias, byte[] data) {
+    public static byte[] sign(String alias, byte[] data) {
         byte[] signature = null;
         try {
             KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
@@ -325,7 +325,7 @@ public class Strongbox implements StrongboxInterface {
         return signature;
     }
 
-    private boolean verify(String alias, byte[] message, byte[] signature) {
+    public static boolean verify(String alias, byte[] message, byte[] signature) {
         try {
             KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
             ks.load(null);
@@ -345,7 +345,7 @@ public class Strongbox implements StrongboxInterface {
         return false;
     }
 
-    private int getLatestAliasNumber() {
+    public static int getLatestAliasNumber() {
         int latestAlias = -1;
 
         try {

@@ -1,5 +1,7 @@
 package com.ptokenssentinelandroidapp.database;
 
+import static com.ptokenssentinelandroidapp.database.Operations.deleteFile;
+
 import android.content.Context;
 import android.database.CursorIndexOutOfBoundsException;
 
@@ -8,7 +10,7 @@ import android.util.Log;
 import android.util.Pair;
 
 import org.apache.commons.codec.binary.Hex;
-import android.database.sqlite.SQLiteDatabase;
+import org.sqlite.database.sqlite.SQLiteDatabase;
 
 
 import java.security.MessageDigest;
@@ -20,21 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/*
-import io.ptokens.security.Strongbox;
-import io.ptokens.security.StrongboxException;
-import io.ptokens.utils.Operations;
-*/
-// NOTE: Can use `db.inTransaction() to deterimine tx status
-// https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#inTransaction()
+
+import com.ptokenssentinelandroidapp.strongbox.Strongbox;
+import com.ptokenssentinelandroidapp.strongbox.StrongboxException;
 
 public class DatabaseWiring implements DatabaseInterface {
-    // FIXME rm!
-    public static void callback() { 
-        System.out.println("database wiring called From JNI");
-    }
-
-
     public static final String TAG = DatabaseWiring.class.getName();
     private static final String NAME_SIGNED_STATE_HASH = "state-hash.sig";
 
@@ -51,8 +43,8 @@ public class DatabaseWiring implements DatabaseInterface {
     private boolean strongboxEnabled;
 
     public DatabaseWiring(
-        Context context, 
-        SQLiteDatabase db, 
+        Context context,
+        SQLiteDatabase db,
         boolean verifyStateHash
     ) {
         this.db = db;
@@ -60,14 +52,12 @@ public class DatabaseWiring implements DatabaseInterface {
         this.removedKeys = new ArrayList<>();
         this.cache = new ConcurrentHashMap<>();
         this.verifySignedStateHashEnabled = verifyStateHash;
-
-        //SQLiteHelper.loadExtension(db);
     }
 
     public DatabaseWiring(
-        Context context, 
-        SQLiteDatabase db, 
-        boolean verifyStateHash, 
+        Context context,
+        SQLiteDatabase db,
+        boolean verifyStateHash,
         boolean writeSignedStateHash
     ) {
         this(context, db, verifyStateHash);
@@ -75,9 +65,9 @@ public class DatabaseWiring implements DatabaseInterface {
     }
 
     public DatabaseWiring(
-        Context context, 
-        SQLiteDatabase db, 
-        boolean verifyStateHash, 
+        Context context,
+        SQLiteDatabase db,
+        boolean verifyStateHash,
         boolean writeSignedStateHash,
         boolean strongboxEnabled
     ) {
@@ -151,18 +141,17 @@ public class DatabaseWiring implements DatabaseInterface {
 
         START_DB_TX_IN_PROGRESS = true;
 
-        /*
         if (verifySignedStateHashEnabled) {
             try {
                 verifySignedStateHash();
             } catch (StrongboxException e) {
                 Log.e(TAG, "signed state hash verification failed!", e);
+                START_DB_TX_IN_PROGRESS = false;
                 throw new DatabaseException("Start tx failed");
             }
         } else {
-        */
             Log.i(TAG, "signed state hash verification skipped");
-        //}
+        }
 
         db.beginTransaction();
         START_DB_TX_IN_PROGRESS = false;
@@ -189,16 +178,18 @@ public class DatabaseWiring implements DatabaseInterface {
             throw new DatabaseException("cancelling db tx failed");
         }
 
-
         DB_TX_IN_PROGRESS = false;
         END_DB_TX_IN_PROGRESS = false;
         START_DB_TX_IN_PROGRESS = false;
 
-        // NOTE: Ending the tx without marking it successful is how we roll it back.
-        db.endTransaction();
-        this.clearCaches();
-
-        Log.i(TAG, "db tx cancelled");
+        if (db.inTransaction()) {
+            // NOTE: Ending the tx without marking it successful is how we roll it back.
+            db.endTransaction();
+            this.clearCaches();
+            Log.i(TAG, "db tx cancelled");
+        } else {
+            Log.i(TAG, "no db tx in progress to cancel");
+        }
     }
 
     @Override
@@ -238,22 +229,19 @@ public class DatabaseWiring implements DatabaseInterface {
             START_DB_TX_IN_PROGRESS = false;
             Log.v(TAG, "keys written, db tx ended successfully");
         }
-        /*
+
         try {
             if (writeSignedStateHashEnabled) {
-                writeSignedStateHash();    
+                writeSignedStateHash();
             } else {
-                Log.w(TAG, "skipping state hash writing...");                        
+                Log.w(TAG, "skipping state hash writing...");
             }
         } catch (DatabaseException e) {
             Log.e(TAG, "failed to write the state hash", e);
-        } finally {
-            START_DB_TX_IN_PROGRESS = false;
         }
-        */
     }
 
-    /*
+
     private void writeSignedStateHash() throws DatabaseException {
 
         byte[] hash = getCurrentStateHash();
@@ -281,7 +269,6 @@ public class DatabaseWiring implements DatabaseInterface {
 
         Strongbox.removeKey(oldAlias);
     }
-    */
 
     private byte[] getCurrentStateHash() {
         try {
@@ -315,7 +302,7 @@ public class DatabaseWiring implements DatabaseInterface {
         return null;
     }
 
-    /*
+
     private void verifySignedStateHash() throws StrongboxException {
 
         byte[] signature = Operations.readBytes(context, NAME_SIGNED_STATE_HASH);
@@ -346,8 +333,7 @@ public class DatabaseWiring implements DatabaseInterface {
         } else {
             Log.i(TAG, "signed state hash verified");
         }
-    }
-    */
+      }
 
 
     @Override
@@ -378,5 +364,8 @@ public class DatabaseWiring implements DatabaseInterface {
     public void drop() {
         // FIXME gate this somehow (debug signature?)
         SQLiteHelper.drop(context);
+        // NOTE: If we're dropping the db, we also need to drop the signature & hash since 
+        // otherwise db state verification (if enabled) would fail.
+        deleteFile(NAME_SIGNED_STATE_HASH);
     }
 }

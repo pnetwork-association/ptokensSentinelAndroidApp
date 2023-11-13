@@ -71,4 +71,13 @@ public class Operations {
             }
         }
     }
+
+    public static void deleteFile(String name) {
+        File f = new File("/data/local/tmp" + name);
+        if (f.delete()) {
+            System.out.println("deleted the file: " + f.getName());
+        } else {
+            System.out.println("failed to delete the file.");
+        }
+    }
 }
