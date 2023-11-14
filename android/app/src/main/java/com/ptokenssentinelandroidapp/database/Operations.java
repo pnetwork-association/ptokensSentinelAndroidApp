@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import com.google.android.gms.common.util.IOUtils;
+import com.ptokenssentinelandroidapp.rustlogger.RustLogger;
 
 import static android.content.Context.MODE_PRIVATE;
 public class Operations {
@@ -21,7 +22,7 @@ public class Operations {
     public static String readFile(String name) {
         File dataDirectory = new File("/data/local/tmp");
 
-        Log.v(TAG, "reading " + name + " from " + dataDirectory);
+        RustLogger.rustLog(TAG + "reading " + name + " from " + dataDirectory);
         File fileToRead = new File(dataDirectory, name);
 
         //Read text from file
@@ -32,7 +33,7 @@ public class Operations {
                 text.append(line);
             }
         } catch (IOException e) {
-            Log.e(TAG, "failed to read the file " + fileToRead, e);
+            RustLogger.rustLog(TAG + "failed to read the file " + fileToRead + e.getMessage());
             return "";
         }
 
@@ -43,9 +44,9 @@ public class Operations {
         try (FileOutputStream outputStream = context.openFileOutput(fileName, MODE_PRIVATE)){
             outputStream.write(signedState);
             outputStream.flush();
-            Log.i(TAG, fileName + " written to disk");
+            RustLogger.rustLog(TAG + fileName + " written to disk");
         } catch (IOException e) {
-            Log.e(TAG, "failed to write " + fileName + " to disk:", e);
+            RustLogger.rustLog(TAG + "failed to write " + fileName + " to disk:" + e.getMessage());
         }
     }
 
@@ -54,7 +55,7 @@ public class Operations {
         try (FileInputStream inputStream = context.openFileInput(fileName)){
             ba = IOUtils.toByteArray(inputStream);
         } catch (IOException e) {
-            Log.w(TAG, "failed to get the signature from the file, ok if first run!");
+            RustLogger.rustLog(TAG + "failed to get the signature from the file, ok if first run!");
         }
         return ba;
     }

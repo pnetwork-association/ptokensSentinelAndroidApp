@@ -2,12 +2,10 @@ package com.ptokenssentinelandroidapp.strongbox;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.database.sqlite.SQLiteDatabase;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
-import android.util.Log;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
@@ -28,9 +26,8 @@ import java.security.UnrecoverableEntryException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.spec.ECGenParameterSpec;
-import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.concurrent.ConcurrentHashMap;
+import com.ptokenssentinelandroidapp.rustlogger.RustLogger;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -40,8 +37,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.GCMParameterSpec;
-
-import com.ptokenssentinelandroidapp.strongbox.AttestationCertificate;
 
 public class Strongbox implements StrongboxInterface {
     private static final String TAG = Strongbox.class.getName();
@@ -78,7 +73,7 @@ public class Strongbox implements StrongboxInterface {
 
 
                 SecretKey key = generator.generateKey();
-                Log.i(TAG, "✔ Secret key generated, strongbox: " + withStrongBox);
+                RustLogger.rustLog(TAG + "✔ Secret key generated, strongbox: " + withStrongBox);
 
                 SecretKeyFactory factory = SecretKeyFactory.getInstance(
                         key.getAlgorithm(),
@@ -87,15 +82,15 @@ public class Strongbox implements StrongboxInterface {
 
                 KeyInfo info = (KeyInfo) factory.getKeySpec(key, KeyInfo.class);
 
-                Log.d(TAG, "✔ New secret key generated with alias: " + ALIAS_SECRET_KEY);
-                Log.d(TAG, "✔ Is inside secure hardware? " + info.isInsideSecureHardware());
+                RustLogger.rustLog(TAG + "✔ New secret key generated with alias: " + ALIAS_SECRET_KEY);
+                RustLogger.rustLog(TAG + "✔ Is inside secure hardware? " + info.isInsideSecureHardware());
 
             }
             else {
-                Log.d(TAG, "✔ Secret key with alias " + ALIAS_SECRET_KEY + " already existing");
+                RustLogger.rustLog(TAG + "✔ Secret key with alias " + ALIAS_SECRET_KEY + " already existing");
             }
         } catch (Exception e) {
-            Log.e(TAG, "✘ generateSecretKey: Failed to generate the secret key", e);
+            RustLogger.rustLog(TAG + "✘ generateSecretKey: Failed to generate the secret key" + e.getMessage());
         }
     }
 
@@ -127,12 +122,12 @@ public class Strongbox implements StrongboxInterface {
 
                 generator.initialize(spec);
                 generator.generateKeyPair();
-                Log.d(TAG, "✔ New key pair with alias " + alias + " created");
+                RustLogger.rustLog(TAG + "✔ New key pair with alias " + alias + " created");
             } else {
-                Log.d(TAG, "✔ Key Pair with alias " + alias + " already existing");
+                RustLogger.rustLog(TAG + "✔ Key Pair with alias " + alias + " already existing");
             }
         } catch (Exception e) {
-            Log.e(TAG, "✘ generateSigningKey: Failed to generate the keypair ", e);
+            RustLogger.rustLog(TAG + "✘ generateSigningKey: Failed to generate the keypair " + e.getMessage());
         }
     }
 
@@ -150,7 +145,7 @@ public class Strongbox implements StrongboxInterface {
             ks.load(null);
             return ks;
         } catch (Exception e) {
-            Log.e(TAG,"failed to load keystore:", e);
+            RustLogger.rustLog(TAG,"failed to load keystore:" + e.getMessage());
             throw e;
         }
     }
@@ -161,7 +156,7 @@ public class Strongbox implements StrongboxInterface {
             boolean r = secretKeyExists(ks) && attestationKeyExists(ks);
             return r;
         } catch (Exception e) {
-            Log.e(TAG,"failed to load keystore:", e);
+            RustLogger.rustLog(TAG,"failed to load keystore:" + e.getMessage());
             return false;
         }
     }
@@ -176,19 +171,19 @@ public class Strongbox implements StrongboxInterface {
     @Override
     public void initializeKeystore()  {
         boolean withStrongbox = this.strongboxIsAvailable();
-        Log.d(TAG, "has strongbox feature: " + Boolean.toString(withStrongbox));
+        RustLogger.rustLog(TAG + "has strongbox feature: " + Boolean.toString(withStrongbox));
 
         try {
             KeyStore ks = loadKeystore();
             generateSecretKey(withStrongbox);
             generateSigningKey(ALIAS_ATTESTATION_KEY, withStrongbox);
-            Log.d(TAG, "✔ Keystore initialized");
+            RustLogger.rustLog(TAG + "✔ Keystore initialized");
         } catch (Exception e) {
-            Log.e(TAG,"✘ initializeKeystore: Failed to initialize the keystore", e);
+            RustLogger.rustLog(TAG,"✘ initializeKeystore: Failed to initialize the keystore" + e.getMessage());
         }
     }
 
-    private Key getSecretKey()
+    private static Key getSecretKey()
             throws
             KeyStoreException,
             StrongboxException,
@@ -198,12 +193,12 @@ public class Strongbox implements StrongboxInterface {
         try {
             ks.load(null);
         } catch (Exception e) {
-            Log.e(TAG, "✘ getSecretKey: Failed to load the keystore", e);
+            RustLogger.rustLog(TAG + "✘ getSecretKey: Failed to load the keystore" + e.getMessage());
         }
         try {
             return ks.getKey(ALIAS_SECRET_KEY, null);
         } catch(Exception e) {
-            Log.e(TAG, "failed to get secret key", e);
+            RustLogger.rustLog(TAG + "failed to get secret key" + e.getMessage());
             throw new StrongboxException(e);
         }
     }
@@ -215,11 +210,10 @@ public class Strongbox implements StrongboxInterface {
 
             ks.deleteEntry(alias);
         } catch (Exception e) {
-            Log.e(TAG, "✘ removeKey: Failed to remove key from keystore", e);
+            RustLogger.rustLog(TAG + "✘ removeKey: Failed to remove key from keystore" + e.getMessage());
         }
     }
 
-    @Override
     public static byte[] encrypt(byte[] data) {
         try {
             Key key = getSecretKey();
@@ -227,8 +221,8 @@ public class Strongbox implements StrongboxInterface {
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] iv = cipher.getIV();
 
-            //Log.d(TAG, "✔ encrypt: iv length:" + iv.length);
-            //Log.d(TAG, "✔ encrypt: iv is:" + Base64.encodeToString(iv, Base64.DEFAULT));
+            //RustLogger.rustLog(TAG + "✔ encrypt: iv length:" + iv.length);
+            //RustLogger.rustLog(TAG + "✔ encrypt: iv is:" + Base64.encodeToString(iv, Base64.DEFAULT));
 
             byte[] encryptedData = cipher.doFinal(data);
             int RESULT_LENGTH = iv.length + encryptedData.length;
@@ -252,12 +246,11 @@ public class Strongbox implements StrongboxInterface {
                 | UnrecoverableEntryException
                 | KeyStoreException
                 | StrongboxException e) {
-            Log.e(TAG, "✘ encrypt: Failed to encrypt data", e);
+            RustLogger.rustLog(TAG + "✘ encrypt: Failed to encrypt data" + e.getMessage());
         }
         return new byte[1];
     }
 
-    @Override
     public static byte[] decrypt(byte[] data) {
         try {
             Key key = getSecretKey();
@@ -271,7 +264,7 @@ public class Strongbox implements StrongboxInterface {
                 iv[i] = data[i];
             }
 
-            // Log.d(TAG, "✔ decrypt:  iv is:" + Base64.encodeToString(iv, Base64.DEFAULT));
+            // RustLogger.rustLog(TAG + "✔ decrypt:  iv is:" + Base64.encodeToString(iv, Base64.DEFAULT));
 
             for (int k = 0; k < ENCRYPTED_DATA_LEN; k++) {
                 encryptedData[k] = data[i++];
@@ -290,7 +283,7 @@ public class Strongbox implements StrongboxInterface {
                 | UnrecoverableEntryException
                 | KeyStoreException
                 | StrongboxException e) {
-            Log.e(TAG, "✘ decrypt: Failed to decrypt data", e);
+            RustLogger.rustLog(TAG + "✘ decrypt: Failed to decrypt data" + e.getMessage());
         }
         return new byte[1];
     }
@@ -307,7 +300,7 @@ public class Strongbox implements StrongboxInterface {
             ks.load(null);
             KeyStore.Entry entry = ks.getEntry(alias, null);
             if (!(entry instanceof KeyStore.PrivateKeyEntry)) {
-                Log.w(TAG, "sign: Not an instance of a PrivateKeyEntry " + alias);
+                RustLogger.rustLog(TAG + "sign: Not an instance of a PrivateKeyEntry " + alias);
                 return null;
             }
             Signature s = Signature.getInstance("SHA256withECDSA");
@@ -317,9 +310,9 @@ public class Strongbox implements StrongboxInterface {
 
             signature = s.sign();
 
-            Log.d(TAG, "✔ Message signed successfully");
+            RustLogger.rustLog(TAG + "✔ Message signed successfully");
         } catch (Exception e) {
-            Log.e(TAG, "✘ sign: Failed to sign data", e);
+            RustLogger.rustLog(TAG + "✘ sign: Failed to sign data" + e.getMessage());
         }
 
         return signature;
@@ -331,7 +324,7 @@ public class Strongbox implements StrongboxInterface {
             ks.load(null);
             KeyStore.Entry entry = ks.getEntry(alias, null);
             if (!(entry instanceof KeyStore.PrivateKeyEntry)) {
-                Log.w(TAG, "✘ verify: Not an instance of a PrivateKeyEntry " + alias);
+                RustLogger.rustLog(TAG + "✘ verify: Not an instance of a PrivateKeyEntry " + alias);
                 return false;
             }
             Signature s = Signature.getInstance("SHA256withECDSA");
@@ -340,7 +333,7 @@ public class Strongbox implements StrongboxInterface {
 
             return s.verify(signature);
         } catch (Exception e) {
-            Log.e(TAG, "✘ verify: Exception while verifying signature", e);
+            RustLogger.rustLog(TAG + "✘ verify: Exception while verifying signature" + e.getMessage());
         }
         return false;
     }
@@ -352,10 +345,10 @@ public class Strongbox implements StrongboxInterface {
             KeyStore ks = KeyStore.getInstance(ANDROID_KEY_STORE);
             ks.load(null);
             Enumeration<String> aliases = ks.aliases();
-            Log.d(TAG, "✔ Listing aliases");
+            RustLogger.rustLog(TAG + "✔ Listing aliases");
             while (aliases.hasMoreElements()) {
                 String alias = aliases.nextElement();
-                Log.d(TAG, " found " + alias);
+                RustLogger.rustLog(TAG + " found " + alias);
                 if(alias.startsWith(ALIAS_STATE_SIGNING_KEY_PREFIX)) {
                     int value = Integer.parseInt(
                             alias.split(ALIAS_STATE_SIGNING_KEY_SEPARATOR)[1]
@@ -367,7 +360,7 @@ public class Strongbox implements StrongboxInterface {
                 }
             }
         } catch (Exception e) {
-            Log.e(TAG, "✔ getLatestAlias: Failed to get aliases", e);
+            RustLogger.rustLog(TAG + "✔ getLatestAlias: Failed to get aliases" + e.getMessage());
         }
 
         return latestAlias;
@@ -402,7 +395,7 @@ public class Strongbox implements StrongboxInterface {
                     .replaceAll("\n", "");
 
         } catch (Exception e) {
-            Log.e(TAG, "✘ getCertificateAttestation: Failed to generate the certificate ", e);
+            RustLogger.rustLog(TAG + "✘ getCertificateAttestation: Failed to generate the certificate " + e.getMessage());
             return "";
         }
     }

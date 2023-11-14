@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import com.ptokenssentinelandroidapp.database.Operations;
+import com.ptokenssentinelandroidapp.rustlogger.RustLogger;
 
 public class SQLiteHelper extends SQLiteOpenHelper {
     private final static String TAG = SQLiteHelper.class.getName();
@@ -33,7 +34,7 @@ public class SQLiteHelper extends SQLiteOpenHelper {
                 null,
                 DATABASE_VERSION
         );
-        Log.d(TAG, "database path "
+        RustLogger.rustLog(TAG + "database path "
                 + context.getDatabasePath(DATABASE_NAME).getAbsolutePath()
         );
     }

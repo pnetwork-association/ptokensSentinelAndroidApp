@@ -4,9 +4,7 @@ import static com.ptokenssentinelandroidapp.database.Operations.deleteFile;
 
 import android.content.Context;
 import android.database.CursorIndexOutOfBoundsException;
-
 import android.util.Base64;
-import android.util.Log;
 import android.util.Pair;
 
 import org.apache.commons.codec.binary.Hex;
@@ -16,13 +14,12 @@ import org.sqlite.database.sqlite.SQLiteDatabase;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
+import com.ptokenssentinelandroidapp.rustlogger.RustLogger;
 import com.ptokenssentinelandroidapp.strongbox.Strongbox;
 import com.ptokenssentinelandroidapp.strongbox.StrongboxException;
 
@@ -88,7 +85,7 @@ public class DatabaseWiring implements DatabaseInterface {
             cache.put(hexKey, value);
         }
 
-        Log.d(TAG, "put: key " + hexKey + " inserted in the cache");
+        RustLogger.rustLog(TAG + "put: key " + hexKey + " inserted in the cache");
     }
 
     @Override
@@ -97,7 +94,7 @@ public class DatabaseWiring implements DatabaseInterface {
 
         try {
             if (removedKeys.contains(hexKey)) {
-                Log.d(TAG, "get: value for " + hexKey + " was removed");
+                RustLogger.rustLog(TAG + "get: value for " + hexKey + " was removed");
                 throw new Exception("get: key " + hexKey + " not found");
             }
 
@@ -128,12 +125,12 @@ public class DatabaseWiring implements DatabaseInterface {
 
     @Override
     public void startTransaction() throws DatabaseException {
-        Log.i(TAG, "starting db tx...");
+        RustLogger.rustLog(TAG + "starting db tx...");
         if (START_DB_TX_IN_PROGRESS) {
-            Log.i(TAG, "cannot start db tx, one is already starting");
+            RustLogger.rustLog(TAG + "cannot start db tx, one is already starting");
             return;
         } else if (DB_TX_IN_PROGRESS) {
-            Log.i(TAG, "cannot start db tx, one is already in progress");
+            RustLogger.rustLog(TAG + "cannot start db tx, one is already in progress");
             return;
         }
 
@@ -143,35 +140,35 @@ public class DatabaseWiring implements DatabaseInterface {
             try {
                 verifySignedStateHash();
             } catch (StrongboxException e) {
-                Log.e(TAG, "signed state hash verification failed!", e);
+                RustLogger.rustLog(TAG + "signed state hash verification failed!" + e.getMessage());
                 START_DB_TX_IN_PROGRESS = false;
                 throw new DatabaseException("Start tx failed");
             }
         } else {
-            Log.i(TAG, "signed state hash verification skipped");
+            RustLogger.rustLog(TAG + "signed state hash verification skipped");
         }
 
         db.beginTransaction();
         START_DB_TX_IN_PROGRESS = false;
-        Log.i(TAG, "db tx started");
+        RustLogger.rustLog(TAG + "db tx started");
         DB_TX_IN_PROGRESS = true;
     }
 
     public void clearCaches() {
-        Log.i(TAG, "clearing caches...");
+        RustLogger.rustLog(TAG + "clearing caches...");
         this.cache.clear();
         this.removedKeys = new ArrayList<>();
-        Log.i(TAG, "caches cleared");
+        RustLogger.rustLog(TAG + "caches cleared");
     }
 
     public void cancelTransaction() throws DatabaseException {
-        Log.i(TAG, "cancelling db tx...");
+        RustLogger.rustLog(TAG + "cancelling db tx...");
 
         if (END_DB_TX_IN_PROGRESS || START_DB_TX_IN_PROGRESS) {
             if (END_DB_TX_IN_PROGRESS) {
-                Log.i(TAG, "cannot cancel db tx, ending tx is in progress");
+                RustLogger.rustLog(TAG + "cannot cancel db tx, ending tx is in progress");
             } else {
-                Log.i(TAG, "cannot cancel db tx, starting tx is in progress");
+                RustLogger.rustLog(TAG + "cannot cancel db tx, starting tx is in progress");
             }
             throw new DatabaseException("cancelling db tx failed");
         }
@@ -184,21 +181,21 @@ public class DatabaseWiring implements DatabaseInterface {
             // NOTE: Ending the tx without marking it successful is how we roll it back.
             db.endTransaction();
             this.clearCaches();
-            Log.i(TAG, "db tx cancelled");
+            RustLogger.rustLog(TAG + "db tx cancelled");
         } else {
-            Log.i(TAG, "no db tx in progress to cancel");
+            RustLogger.rustLog(TAG + "no db tx in progress to cancel");
         }
     }
 
     @Override
     public void endTransaction() throws DatabaseException {
-        Log.i(TAG, "ending db tx...");
+        RustLogger.rustLog(TAG + "ending db tx...");
         try {
             if (END_DB_TX_IN_PROGRESS) {
-                Log.i(TAG, "end db tx already in progress");
+                RustLogger.rustLog(TAG + "end db tx already in progress");
                 return;
             } if (!DB_TX_IN_PROGRESS) {
-                Log.i(TAG, "no db tx in progress to end");
+                RustLogger.rustLog(TAG + "no db tx in progress to end");
                 return;
             } if (START_DB_TX_IN_PROGRESS) {
                 throw new DatabaseException("cannot end db tx, one is currently starting");
@@ -208,7 +205,7 @@ public class DatabaseWiring implements DatabaseInterface {
 
             END_DB_TX_IN_PROGRESS = true;
 
-            Log.v(TAG, "writing keys: ");
+            RustLogger.rustLog(TAG + "writing keys: ");
 
             for (String key : cache.keySet()) {
                 SQLiteHelper.insertOrReplace(db, key, cache.get(key));
@@ -225,17 +222,17 @@ public class DatabaseWiring implements DatabaseInterface {
             DB_TX_IN_PROGRESS = false;
             END_DB_TX_IN_PROGRESS = false;
             START_DB_TX_IN_PROGRESS = false;
-            Log.v(TAG, "keys written, db tx ended successfully");
+            RustLogger.rustLog(TAG + "keys written, db tx ended successfully");
         }
 
         try {
             if (writeSignedStateHashEnabled) {
                 writeSignedStateHash();
             } else {
-                Log.w(TAG, "skipping state hash writing...");
+                RustLogger.rustLog(TAG + "skipping state hash writing...");
             }
         } catch (DatabaseException e) {
-            Log.e(TAG, "failed to write the state hash", e);
+            RustLogger.rustLog(TAG + "failed to write the state hash" + e.getMessage());
         }
     }
 
@@ -256,10 +253,10 @@ public class DatabaseWiring implements DatabaseInterface {
                 + Strongbox.ALIAS_STATE_SIGNING_KEY_SEPARATOR
                 + (aliasNumber + 1);
         Strongbox.generateSigningKey(newAlias, this.strongboxEnabled);
-        Log.i(TAG, "switch key " + oldAlias + " <=> " + newAlias);
+        RustLogger.rustLog(TAG + "switch key " + oldAlias + " <=> " + newAlias);
         byte[] signedState = Strongbox.sign(newAlias, hash);
 
-        Log.i(TAG, "new signed state hash " +
+        RustLogger.rustLog(TAG + "new signed state hash " +
                 Base64.encodeToString(signedState, Base64.DEFAULT)
         );
 
@@ -273,7 +270,7 @@ public class DatabaseWiring implements DatabaseInterface {
             ArrayList<Pair<String, byte[]>> keyValuePairs = SQLiteHelper.getKeysAndHashedValues(db);
 
             if (keyValuePairs.isEmpty()) {
-                Log.w(TAG, "no keys found!");
+                RustLogger.rustLog(TAG + "no keys found!");
                 return null;
             }
 
@@ -286,15 +283,15 @@ public class DatabaseWiring implements DatabaseInterface {
             }
 
             byte[] currentStateHash = sha1.digest();
-            Log.i(TAG, "current state hash"
+            RustLogger.rustLog(TAG + "current state hash"
                     + Base64.encodeToString(currentStateHash, Base64.DEFAULT)
             );
 
             return currentStateHash;
         } catch (NoSuchAlgorithmException e) {
-            Log.e(TAG,"SHA-1 not supported", e);
+            RustLogger.rustLog(TAG,"SHA-1 not supported" + e.getMessage());
         } catch (Exception e) {
-            Log.e(TAG,"current state hash error:" + e.getMessage());
+            RustLogger.rustLog(TAG,"current state hash error:" + e.getMessage());
         }
 
         return null;
@@ -313,7 +310,7 @@ public class DatabaseWiring implements DatabaseInterface {
         } else if (signatureExists && !hashExists) {
             throw new StrongboxException("✘ Existing signature for missing state!");
         } else if (!signatureExists) {
-            Log.i(TAG, "first run!");
+            RustLogger.rustLog(TAG + "first run!");
             return;
         }
 
@@ -329,7 +326,7 @@ public class DatabaseWiring implements DatabaseInterface {
         if (!Strongbox.verify(alias, hash, signature)) {
             throw new StrongboxException("✘ Invalid signature for existing state!");
         } else {
-            Log.i(TAG, "signed state hash verified");
+            RustLogger.rustLog(TAG + "signed state hash verified");
         }
       }
 
@@ -341,7 +338,7 @@ public class DatabaseWiring implements DatabaseInterface {
         db.close();
         helper.close();
         clearCaches();
-        Log.w(TAG, "db closed");
+        RustLogger.rustLog(TAG + "db closed");
     }
 
     private byte[] readCache(String hexKey) {

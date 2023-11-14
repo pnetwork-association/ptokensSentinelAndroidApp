@@ -10,6 +10,4 @@ public interface StrongboxInterface {
     void initializeKeystore();
     String getCertificateAttestation();
     byte[] signWithAttestationKey(byte[] data);
-    byte[] encrypt(byte[] data);
-    byte[] decrypt(byte[] data);
 }
