@@ -21,7 +21,7 @@ import com.ptokenssentinelandroidapp.database.Operations;
 import com.ptokenssentinelandroidapp.rustlogger.RustLogger;
 
 public class SQLiteHelper extends SQLiteOpenHelper {
-    private final static String TAG = SQLiteHelper.class.getName();
+    private final static String CLASS_NAME = "Java" + SQLiteHelper.class.getName();
     private final static String DATABASE_NAME = "StrongboxDatabase";
     private final static int DATABASE_VERSION = 2;
     private final static String CURSOR_WINDOW_NAME = "ValueWindow";
@@ -34,7 +34,7 @@ public class SQLiteHelper extends SQLiteOpenHelper {
                 null,
                 DATABASE_VERSION
         );
-        RustLogger.rustLog(TAG + "database path "
+        RustLogger.rustLog(CLASS_NAME + " database path "
                 + context.getDatabasePath(DATABASE_NAME).getAbsolutePath()
         );
     }

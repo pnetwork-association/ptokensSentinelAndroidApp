@@ -15,14 +15,15 @@ import com.google.android.gms.common.util.IOUtils;
 import com.ptokenssentinelandroidapp.rustlogger.RustLogger;
 
 import static android.content.Context.MODE_PRIVATE;
-public class Operations {
 
-    public static final String TAG = Operations.class.getName();
+public class Operations {
+    public static final String CLASS_NAME = "Java" + Operations.class.getName();
+    public static final String DATA_DIR = "/data/local/tmp";
 
     public static String readFile(String name) {
-        File dataDirectory = new File("/data/local/tmp");
+        File dataDirectory = new File(DATA_DIR);
 
-        RustLogger.rustLog(TAG + "reading " + name + " from " + dataDirectory);
+        RustLogger.rustLog(CLASS_NAME + " reading " + name + " from " + dataDirectory);
         File fileToRead = new File(dataDirectory, name);
 
         //Read text from file
@@ -33,7 +34,7 @@ public class Operations {
                 text.append(line);
             }
         } catch (IOException e) {
-            RustLogger.rustLog(TAG + "failed to read the file " + fileToRead + e.getMessage());
+            RustLogger.rustLog(CLASS_NAME + " failed to read the file " + fileToRead + e.getMessage());
             return "";
         }
 
@@ -44,9 +45,9 @@ public class Operations {
         try (FileOutputStream outputStream = context.openFileOutput(fileName, MODE_PRIVATE)){
             outputStream.write(signedState);
             outputStream.flush();
-            RustLogger.rustLog(TAG + fileName + " written to disk");
+            RustLogger.rustLog(CLASS_NAME + fileName + " written to disk");
         } catch (IOException e) {
-            RustLogger.rustLog(TAG + "failed to write " + fileName + " to disk:" + e.getMessage());
+            RustLogger.rustLog(CLASS_NAME + " failed to write " + fileName + " to disk:" + e.getMessage());
         }
     }
 
@@ -55,7 +56,7 @@ public class Operations {
         try (FileInputStream inputStream = context.openFileInput(fileName)){
             ba = IOUtils.toByteArray(inputStream);
         } catch (IOException e) {
-            RustLogger.rustLog(TAG + "failed to get the signature from the file, ok if first run!");
+            RustLogger.rustLog(CLASS_NAME + " failed to get the signature from the file, ok if first run!");
         }
         return ba;
     }
@@ -74,11 +75,12 @@ public class Operations {
     }
 
     public static void deleteFile(String name) {
-        File f = new File("/data/local/tmp" + name);
+        File f = new File(DATA_DIR, name);
+
         if (f.delete()) {
-            System.out.println("deleted the file: " + f.getName());
+            RustLogger.rustLog(CLASS_NAME + " deleted the file: " + f.getName());
         } else {
-            System.out.println("failed to delete the file.");
+            RustLogger.rustLog(CLASS_NAME + " failed to delete the file: " + f.getName());
         }
     }
 }

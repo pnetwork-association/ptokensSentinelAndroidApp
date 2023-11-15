@@ -16,7 +16,7 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
 
   val context = this.reactApplicationContext.applicationContext
 
-  val CLASS_NAME: String = "RustBridge"
+  val CLASS_NAME: String = "JavaRustBridge"
 
   var db: DatabaseWiring? = null
 
@@ -33,9 +33,9 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
 
   @ReactMethod
   fun openDb(successCallback: Callback, failureCallback: Callback) {
-    RustLogger.rustLog("info", this.CLASS_NAME + "opening db...")
+    RustLogger.rustLog("info", this.CLASS_NAME + " opening db...")
     if (this.db != null) {
-      RustLogger.rustLog("debug", this.CLASS_NAME + "db already opened")
+      RustLogger.rustLog("debug", this.CLASS_NAME + " db already opened")
       successCallback.invoke()
       return
     }
@@ -49,11 +49,11 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
         verifyStateHash,
         writeStateHash
       )
-      RustLogger.rustLog("info", this.CLASS_NAME + "opened SQL database")
+      RustLogger.rustLog("info", this.CLASS_NAME + " opened SQL database")
       successCallback.invoke()
       return
     } catch (e: Exception) {
-      RustLogger.rustLog("error",  this.CLASS_NAME + "error opening SQL database $e")
+      RustLogger.rustLog("error",  this.CLASS_NAME + " error opening SQL database $e")
       failureCallback.invoke(e.message)
       return
     }
@@ -61,9 +61,9 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
 
   @ReactMethod
   fun closeDb(successCallback: Callback, failureCallback: Callback) {
-    RustLogger.rustLog("info", this.CLASS_NAME + "closing db...")
+    RustLogger.rustLog("info", this.CLASS_NAME + " closing db...")
     if (this.db == null) {
-      RustLogger.rustLog("debug", this.CLASS_NAME + "db already closed")
+      RustLogger.rustLog("debug", this.CLASS_NAME + " db already closed")
       successCallback.invoke()
       return
     }
@@ -71,11 +71,11 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
     try {
       SQLiteHelper(context).close()
       this.db = null
-      RustLogger.rustLog("debug", this.CLASS_NAME + "closed SQL database")
+      RustLogger.rustLog("debug", this.CLASS_NAME + " closed SQL database")
       successCallback.invoke()
       return
     } catch (e: Exception) {
-      RustLogger.rustLog("error", this.CLASS_NAME + "error closing SQL database $e")
+      RustLogger.rustLog("error", this.CLASS_NAME + " error closing SQL database $e")
       failureCallback.invoke(e.message)
       return
     }
@@ -84,11 +84,11 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
   @ReactMethod
   fun callRustCore(b64Input: String, successCallback: Callback, failureCallback: Callback) {
     try {
-      RustLogger.rustLog("info", this.CLASS_NAME + "`callRustCore` successfully")
+      RustLogger.rustLog("info", this.CLASS_NAME + " `callRustCore` successfully")
       successCallback.invoke(callCore(this.strongbox!!, this.db!!, b64Input))
       return
     } catch(e: Exception) {
-      RustLogger.rustLog("error", this.CLASS_NAME + "failed to call rust core with exception: $e")
+      RustLogger.rustLog("error", this.CLASS_NAME + " failed to call rust core with exception: $e")
       failureCallback.invoke(e.message)
       return
     }
@@ -98,10 +98,10 @@ class RustBridge(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
   fun dropDb(successCallback: Callback, failureCallback: Callback) {
     try {
       this.db!!.drop()
-      RustLogger.rustLog("info", this.CLASS_NAME + "database dropped!")
+      RustLogger.rustLog("info", this.CLASS_NAME + " database dropped!")
       successCallback.invoke()
     } catch(e: Exception) {
-      RustLogger.rustLog("error", this.CLASS_NAME + "could not drop database, it was null")
+      RustLogger.rustLog("error", this.CLASS_NAME + " could not drop database, it was null")
       failureCallback.invoke(e.message)
     }
   }
