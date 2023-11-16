@@ -330,7 +330,6 @@ public class DatabaseWiring implements DatabaseInterface {
         }
       }
 
-
     @Override
     public void close() {
         SQLiteHelper helper = new SQLiteHelper(context);
