@@ -21,11 +21,26 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.ptokenssentinelandroidapp.rustlogger.RustLogger;
 import com.ptokenssentinelandroidapp.strongbox.Strongbox;
-import com.ptokenssentinelandroidapp.strongbox.StrongboxException;
+
+// NOTE: At the end of every database transaction, the db is hashed and that hash signed by the TEE
+// protected key. When a transaction is started, the database is again hashed, and checked against
+// the previous, signed hash, in order to verify that the database hasn't been tampered with. This
+// enum holds the various stats this db can be in, based on this integrity check.
+enum DbIntegrity {
+    VALID,
+    INVALID,
+    NO_HASH,
+    NO_STATE,
+    FIRST_RUN,
+    UNVERIFIABLE,
+    HASH_WRITTEN,
+    NO_SIGNATURE,
+}
 
 public class DatabaseWiring implements DatabaseInterface {
     public static final String CLASS_NAME = "Java" + DatabaseWiring.class.getName();
     private static final String NAME_SIGNED_STATE_HASH = "state-hash.sig";
+    private static final String SUCCESS_MESSAGE = "success";
 
     private boolean START_DB_TX_IN_PROGRESS = false;
     private boolean END_DB_TX_IN_PROGRESS = false;
@@ -35,9 +50,22 @@ public class DatabaseWiring implements DatabaseInterface {
     private SQLiteDatabase db;
     private Map<String, byte[]> cache;
     private List<String> removedKeys;
-    private boolean verifySignedStateHashEnabled;
+    private boolean verifyDbIntegrityEnabled;
     private boolean writeSignedStateHashEnabled;
     private boolean strongboxEnabled;
+
+    private String createJsonRpcResponse(Long id, String body) {
+        return "{\"jsonrpc\": \"2.0\", \"id\": " + id + ", " + body + "}";
+
+    }
+
+    private String createSuccessJsonResponse(Long id, String msg) {
+        return createJsonRpcResponse(id, "\"result\": " + msg);
+    }
+
+    private String createErrorJsonResponse(Long id, Long errorCode, String msg) {
+        return createJsonRpcResponse(id, "\"error\": {\"code\": " + errorCode + ", \"message\" :" + msg + "}");
+    }
 
     public DatabaseWiring(
         Context context,
@@ -48,7 +76,7 @@ public class DatabaseWiring implements DatabaseInterface {
         this.context = context;
         this.removedKeys = new ArrayList<>();
         this.cache = new ConcurrentHashMap<>();
-        this.verifySignedStateHashEnabled = verifyStateHash;
+        this.verifyDbIntegrityEnabled = verifyStateHash;
     }
 
     public DatabaseWiring(
@@ -123,35 +151,53 @@ public class DatabaseWiring implements DatabaseInterface {
         removedKeys.add(hexKey);
     }
 
+    // NOTE: This returns a jsonrpc spec response so that the rust library which calls it can glean
+    // more information about any failure states this function ends up in. Previously, exceptions
+    // were use, but the JNI interop between rust and java doesn't allow us access to any
+    // information _about_ an exception, just that one occurred. All JNI can then do is tell the
+    // java run time to print the exception, and then clear it ready for passing control back to
+    // java. However this means the rust library has no idea what specifically occurred. And so
+    // instead we return a json encoded string for the rust library to parse in order to better
+    // understand and act on any errors that might occur.
     @Override
-    public void startTransaction() throws DatabaseException {
+    public String startTransaction() {
+        long rpcId = 1;
         RustLogger.rustLog(CLASS_NAME + " starting db tx...");
+        String successResponse = createSuccessJsonResponse(rpcId, SUCCESS_MESSAGE);
+
         if (START_DB_TX_IN_PROGRESS) {
             RustLogger.rustLog(CLASS_NAME + " cannot start db tx, one is already starting");
-            return;
+            return successResponse;
         } else if (DB_TX_IN_PROGRESS) {
             RustLogger.rustLog(CLASS_NAME + " cannot start db tx, one is already in progress");
-            return;
+            return successResponse;
         }
 
         START_DB_TX_IN_PROGRESS = true;
+        String skipMessage = "signed state hash verification skipped";
 
-        if (verifySignedStateHashEnabled) {
-            try {
-                verifySignedStateHash();
-            } catch (StrongboxException e) {
-                RustLogger.rustLog(CLASS_NAME + " signed state hash verification failed: " + e.getMessage());
-                START_DB_TX_IN_PROGRESS = false;
-                throw new DatabaseException("Start tx failed");
-            }
+        if (!verifyDbIntegrityEnabled) {
+            RustLogger.rustLog(CLASS_NAME + " " + skipMessage);
         } else {
-            RustLogger.rustLog(CLASS_NAME + " signed state hash verification skipped");
+            DbIntegrity dbIntegrity = getDbIntegrity();
+
+            if (dbIntegrity == DbIntegrity.FIRST_RUN) {
+                RustLogger.rustLog(CLASS_NAME + skipMessage + " due to first run");
+            } else {
+                String errorMessage = "{\"msg\": \"signed state hash verification failed\", \"dbIntegrity\": \"" + dbIntegrity.name() + "\"}";
+                long errorCode = dbIntegrity.ordinal();
+                RustLogger.rustLog(CLASS_NAME + errorMessage);
+                START_DB_TX_IN_PROGRESS = false;
+                return createErrorJsonResponse(rpcId, errorCode, errorMessage);
+            }
         }
 
         db.beginTransaction();
         START_DB_TX_IN_PROGRESS = false;
         RustLogger.rustLog(CLASS_NAME + " db tx started");
         DB_TX_IN_PROGRESS = true;
+        
+        return successResponse;
     }
 
     public void clearCaches() {
@@ -187,18 +233,29 @@ public class DatabaseWiring implements DatabaseInterface {
         }
     }
 
+    // NOTE: See note for `startTransaction`.
     @Override
-    public void endTransaction() throws DatabaseException {
+    public String endTransaction() {
         RustLogger.rustLog(CLASS_NAME + " ending db tx...");
+        long rpcId = 2;
+        String successResponse = createSuccessJsonResponse(rpcId, SUCCESS_MESSAGE);
+
         try {
             if (END_DB_TX_IN_PROGRESS) {
                 RustLogger.rustLog(CLASS_NAME + " end db tx already in progress");
-                return;
-            } if (!DB_TX_IN_PROGRESS) {
+                return successResponse;
+            } 
+
+            if (!DB_TX_IN_PROGRESS) {
                 RustLogger.rustLog(CLASS_NAME + " no db tx in progress to end");
-                return;
-            } if (START_DB_TX_IN_PROGRESS) {
-                throw new DatabaseException("cannot end db tx, one is currently starting");
+                return successResponse;
+            } 
+
+            if (START_DB_TX_IN_PROGRESS) {
+                long errorCode = 42; // FIXME magic number
+                String errorMessage = "cannot end db tx, one is currently starting";
+                RustLogger.rustLog(CLASS_NAME + " " + errorMessage);
+                return createErrorJsonResponse(rpcId, errorCode, errorMessage);
             } else {
                 START_DB_TX_IN_PROGRESS = false;
             }
@@ -225,23 +282,29 @@ public class DatabaseWiring implements DatabaseInterface {
             RustLogger.rustLog(CLASS_NAME + " keys written, db tx ended successfully");
         }
 
-        try {
-            if (writeSignedStateHashEnabled) {
-                writeSignedStateHash();
-            } else {
-                RustLogger.rustLog(CLASS_NAME + " skipping state hash writing...");
-            }
-        } catch (DatabaseException e) {
-            RustLogger.rustLog(CLASS_NAME + " failed to write the state hash: " + e.getMessage());
+        if (!writeSignedStateHashEnabled) {
+            RustLogger.rustLog(CLASS_NAME + " skipping state hash writing...");
+            return successResponse;
+        } 
+
+        var dbIntegrity = writeSignedStateHash();
+        if (dbIntegrity == DbIntegrity.HASH_WRITTEN) {
+            return successResponse;
+        } else {
+            long errorCode = dbIntegrity.ordinal();
+            String errorMessage = "{\"msg\": \"failed to write signed state hash\", \"dbIntegrity\": \"" + dbIntegrity.name() + "\"}";
+            RustLogger.rustLog(CLASS_NAME + " " + errorMessage);
+            return createErrorJsonResponse(rpcId, errorCode, errorMessage);
         }
     }
 
 
-    private void writeSignedStateHash() throws DatabaseException {
-
+    private DbIntegrity writeSignedStateHash() {
         byte[] hash = getCurrentStateHash();
+
         if (hash == null) {
-            throw new DatabaseException("Write signed state failed, hash not found");
+            RustLogger.rustLog(CLASS_NAME + " writing signed state failed, hash not found");
+            return DbIntegrity.NO_HASH;
         }
 
         int aliasNumber = Strongbox.getLatestAliasNumber();
@@ -249,20 +312,24 @@ public class DatabaseWiring implements DatabaseInterface {
         String oldAlias = Strongbox.ALIAS_STATE_SIGNING_KEY_PREFIX
                 + Strongbox.ALIAS_STATE_SIGNING_KEY_SEPARATOR
                 + aliasNumber;
+
         String newAlias = Strongbox.ALIAS_STATE_SIGNING_KEY_PREFIX
                 + Strongbox.ALIAS_STATE_SIGNING_KEY_SEPARATOR
                 + (aliasNumber + 1);
+
         Strongbox.generateSigningKey(newAlias, this.strongboxEnabled);
         RustLogger.rustLog(CLASS_NAME + " switch key " + oldAlias + " <=> " + newAlias);
         byte[] signedState = Strongbox.sign(newAlias, hash);
 
         RustLogger.rustLog(CLASS_NAME + " new signed state hash " +
-                Base64.encodeToString(signedState, Base64.DEFAULT)
+            Base64.encodeToString(signedState, Base64.DEFAULT)
         );
 
         Operations.writeBytes(context, NAME_SIGNED_STATE_HASH, signedState);
 
         Strongbox.removeKey(oldAlias);
+
+        return DbIntegrity.HASH_WRITTEN;
     }
 
     private byte[] getCurrentStateHash() {
@@ -298,36 +365,44 @@ public class DatabaseWiring implements DatabaseInterface {
     }
 
 
-    private void verifySignedStateHash() throws StrongboxException {
+    private DbIntegrity getDbIntegrity() {
+        RustLogger.rustLog(CLASS_NAME + "Verifying signed state hash...");
 
         byte[] signature = Operations.readBytes(context, NAME_SIGNED_STATE_HASH);
         byte[] hash = getCurrentStateHash();
 
         boolean signatureExists = (signature != null && signature.length > 0);
         boolean hashExists = (hash != null);
+
         if (!signatureExists && hashExists) {
-            throw new StrongboxException("missing signature for existing state");
+            RustLogger.rustLog(CLASS_NAME + " no signature for existing state");
+            return DbIntegrity.NO_SIGNATURE;
         } else if (signatureExists && !hashExists) {
-            throw new StrongboxException("existing signature for missing state");
+            RustLogger.rustLog(CLASS_NAME + " no state for existing signature");
+            return DbIntegrity.NO_STATE;
         } else if (!signatureExists) {
             RustLogger.rustLog(CLASS_NAME + " first run!");
-            return;
+            return DbIntegrity.FIRST_RUN;
         }
 
-        // NOTE: We've reached this point meaning that we have a signature and
-        // a state hash
         int aliasNumber = Strongbox.getLatestAliasNumber();
+
         if (aliasNumber == -1) {
-            throw new StrongboxException("unverifiable signature for existing state - aborting");
+            RustLogger.rustLog(CLASS_NAME + "unverifiable signature for existing state - aborting");
+            return  DbIntegrity.UNVERIFIABLE;
         }
+
         String alias = Strongbox.ALIAS_STATE_SIGNING_KEY_PREFIX
                 + Strongbox.ALIAS_STATE_SIGNING_KEY_SEPARATOR
                 + aliasNumber;
+
         if (!Strongbox.verify(alias, hash, signature)) {
-            throw new StrongboxException("invalid signature for existing state");
-        } else {
-            RustLogger.rustLog(CLASS_NAME + " signed state hash verified");
-        }
+            RustLogger.rustLog(CLASS_NAME, "invalid signature for existing state");
+            return  DbIntegrity.INVALID;
+        } 
+
+        RustLogger.rustLog(CLASS_NAME + " signed state hash verified");
+        return  DbIntegrity.VALID;
       }
 
     @Override
