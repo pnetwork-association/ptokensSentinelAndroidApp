@@ -1,24 +1,18 @@
 package com.ptokenssentinelandroidapp.database;
 
-import static com.ptokenssentinelandroidapp.database.Operations.deleteFile;
-
 import android.content.Context;
 import android.database.CursorIndexOutOfBoundsException;
 import android.util.Base64;
 import android.util.Pair;
-
 import org.apache.commons.codec.binary.Hex;
 import org.sqlite.database.sqlite.SQLiteDatabase;
-
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-
 import com.ptokenssentinelandroidapp.rustlogger.RustLogger;
 import com.ptokenssentinelandroidapp.strongbox.Strongbox;
 
@@ -40,7 +34,7 @@ enum DbIntegrity {
 public class DatabaseWiring implements DatabaseInterface {
     public static final String CLASS_NAME = "Java" + DatabaseWiring.class.getName();
     private static final String NAME_SIGNED_STATE_HASH = "state-hash.sig";
-    private static final String SUCCESS_MESSAGE = "success";
+    private static final String SUCCESS_MESSAGE = "\"success\"";
 
     private boolean START_DB_TX_IN_PROGRESS = false;
     private boolean END_DB_TX_IN_PROGRESS = false;
@@ -176,28 +170,27 @@ public class DatabaseWiring implements DatabaseInterface {
         START_DB_TX_IN_PROGRESS = true;
         String skipMessage = "signed state hash verification skipped";
 
-        if (!verifyDbIntegrityEnabled) {
-            RustLogger.rustLog(CLASS_NAME + " " + skipMessage);
-        } else {
-            DbIntegrity dbIntegrity = getDbIntegrity();
+        // FIXME Do we need a skipped variant of the enum?
+        DbIntegrity dbIntegrity = verifyDbIntegrityEnabled ? getDbIntegrity() : DbIntegrity.VALID; 
 
+        if (dbIntegrity == DbIntegrity.FIRST_RUN || dbIntegrity == DbIntegrity.VALID) {
             if (dbIntegrity == DbIntegrity.FIRST_RUN) {
                 RustLogger.rustLog(CLASS_NAME + skipMessage + " due to first run");
             } else {
-                String errorMessage = "{\"msg\": \"signed state hash verification failed\", \"dbIntegrity\": \"" + dbIntegrity.name() + "\"}";
-                long errorCode = dbIntegrity.ordinal();
-                RustLogger.rustLog(CLASS_NAME + errorMessage);
-                START_DB_TX_IN_PROGRESS = false;
-                return createErrorJsonResponse(rpcId, errorCode, errorMessage);
+                RustLogger.rustLog(CLASS_NAME + " db integrity is valid");
             }
+            db.beginTransaction();
+            START_DB_TX_IN_PROGRESS = false;
+            RustLogger.rustLog(CLASS_NAME + " db tx started");
+            DB_TX_IN_PROGRESS = true;
+            return successResponse;
+        } else {
+            String errorMessage = "{\"msg\": \"signed state hash verification failed\", \"dbIntegrity\": \"" + dbIntegrity.name() + "\"}";
+            long errorCode = dbIntegrity.ordinal();
+            RustLogger.rustLog(CLASS_NAME + errorMessage);
+            START_DB_TX_IN_PROGRESS = false;
+            return createErrorJsonResponse(rpcId, errorCode, errorMessage);
         }
-
-        db.beginTransaction();
-        START_DB_TX_IN_PROGRESS = false;
-        RustLogger.rustLog(CLASS_NAME + " db tx started");
-        DB_TX_IN_PROGRESS = true;
-        
-        return successResponse;
     }
 
     public void clearCaches() {
@@ -244,12 +237,12 @@ public class DatabaseWiring implements DatabaseInterface {
             if (END_DB_TX_IN_PROGRESS) {
                 RustLogger.rustLog(CLASS_NAME + " end db tx already in progress");
                 return successResponse;
-            } 
+            }
 
             if (!DB_TX_IN_PROGRESS) {
                 RustLogger.rustLog(CLASS_NAME + " no db tx in progress to end");
                 return successResponse;
-            } 
+            }
 
             if (START_DB_TX_IN_PROGRESS) {
                 long errorCode = 42; // FIXME magic number
@@ -285,7 +278,7 @@ public class DatabaseWiring implements DatabaseInterface {
         if (!writeSignedStateHashEnabled) {
             RustLogger.rustLog(CLASS_NAME + " skipping state hash writing...");
             return successResponse;
-        } 
+        }
 
         var dbIntegrity = writeSignedStateHash();
         if (dbIntegrity == DbIntegrity.HASH_WRITTEN) {
@@ -399,7 +392,7 @@ public class DatabaseWiring implements DatabaseInterface {
         if (!Strongbox.verify(alias, hash, signature)) {
             RustLogger.rustLog(CLASS_NAME, "invalid signature for existing state");
             return  DbIntegrity.INVALID;
-        } 
+        }
 
         RustLogger.rustLog(CLASS_NAME + " signed state hash verified");
         return  DbIntegrity.VALID;
@@ -431,10 +424,27 @@ public class DatabaseWiring implements DatabaseInterface {
     }
 
     public void drop() {
-        // FIXME gate this somehow (debug signature?)
+        // NOTE: First we need to disable the integrity check stuff because we don't care about it
+        // any more, and it may be that check failing that's caused the need for a hard reset.
+        boolean verifyDbIntegrityBefore = this.verifyDbIntegrityEnabled;
+        boolean writeHashEnabledBefore = this.writeSignedStateHashEnabled;
+        this.verifyDbIntegrityEnabled = false;
+        this.writeSignedStateHashEnabled = false;
+
+        this.startTransaction();
         SQLiteHelper.drop(context);
-        // NOTE: If we're dropping the db, we also need to drop the signature & hash since 
-        // otherwise db state verification (if enabled) would fail.
-        deleteFile(NAME_SIGNED_STATE_HASH);
+
+        // NOTE: We also need to drop the db integrity hash and signature so that we have a
+        // clean slate for the next db transaction.
+        if (this.context.deleteFile(NAME_SIGNED_STATE_HASH)) {
+            RustLogger.rustLog(CLASS_NAME, NAME_SIGNED_STATE_HASH + " deleted");
+        } else {
+            RustLogger.rustLog(CLASS_NAME, "failed ot delete file: " + NAME_SIGNED_STATE_HASH);
+        }
+        this.endTransaction();
+
+        // NOTE: Now we restore the integrity check stuff to whatever it was set to before.
+        this.verifyDbIntegrityEnabled = verifyDbIntegrityBefore;
+        this.writeSignedStateHashEnabled = writeHashEnabledBefore;
     }
 }

@@ -45,6 +45,7 @@ public class Operations {
         try (FileOutputStream outputStream = context.openFileOutput(fileName, MODE_PRIVATE)){
             outputStream.write(signedState);
             outputStream.flush();
+            outputStream.close();
             RustLogger.rustLog(CLASS_NAME + fileName + " written to disk");
         } catch (IOException e) {
             RustLogger.rustLog(CLASS_NAME + " failed to write " + fileName + " to disk:" + e.getMessage());
@@ -71,16 +72,6 @@ public class Operations {
                     out.write(buf, 0, len);
                 }
             }
-        }
-    }
-
-    public static void deleteFile(String name) {
-        File f = new File(DATA_DIR, name);
-
-        if (f.delete()) {
-            RustLogger.rustLog(CLASS_NAME + " deleted the file: " + f.getName());
-        } else {
-            RustLogger.rustLog(CLASS_NAME + " failed to delete the file: " + f.getName());
         }
     }
 }
