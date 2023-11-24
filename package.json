@@ -9,6 +9,7 @@
     "clean": "./scripts/clean.sh",
     "ios": "react-native run-ios",
     "start": "react-native start",
+    "buildApk": "./scripts/build-apk.sh",
     "android": "react-native run-android",
     "buildRustLib": "./scripts/build-rust-lib.sh",
     "cleanRustLib": "./scripts/clean-rust-lib.sh",
