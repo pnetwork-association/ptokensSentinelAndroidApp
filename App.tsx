@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native'
 
-import DropDbButton from './components/drop-db'
 import Websockets from './components/websockets'
 import WebsocketsUrl from './components/websockets-url'
 import {Colors} from 'react-native/Libraries/NewAppScreen'
@@ -30,7 +29,6 @@ function App(): JSX.Element {
         />
         <Websockets />
         <WebsocketsUrl />
-        <DropDbButton />
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           style={backgroundStyle}>
